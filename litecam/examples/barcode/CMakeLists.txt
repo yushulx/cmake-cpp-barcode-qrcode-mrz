@@ -40,7 +40,7 @@ elseif(UNIX)
 endif()
 
 # Create the executable
-add_executable(BarcodeScanner main.cpp)
+add_executable(BarcodeScanner capture_callback.cpp)
 target_include_directories(BarcodeScanner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../dist/include ${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/include)
 target_link_libraries(BarcodeScanner litecam ${DBR_LIBS})
 
