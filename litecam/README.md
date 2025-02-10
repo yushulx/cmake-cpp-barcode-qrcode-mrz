@@ -67,6 +67,9 @@ LiteCam is a lightweight, cross-platform library for capturing RGB frames from c
     mkdir build && cd build
     cmake ..
     cmake --build .
+
+    ## macOS: Use the lipo tool to inspect the architectures included in the .dylib
+    lipo -info liblitecam.dylib
     ```
 
 3. Link the library to your project.

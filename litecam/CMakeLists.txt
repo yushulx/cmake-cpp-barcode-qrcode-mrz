@@ -28,6 +28,7 @@ elseif (UNIX AND NOT APPLE)
         src/CameraPreviewLinux.cpp
     )
 elseif (APPLE)
+    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
     # Ensure that Objective-C++ source files are compiled as Objective-C++
     set(LIBRARY_SOURCES
         src/CameraMacOS.mm

@@ -122,7 +122,7 @@ int barcode_decoding(const unsigned char *buffer, int width, int height, int str
 
 	char errorMsgBuffer[512];
 	// Click https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform to get a trial license.
-	int ret = DBR_InitLicense(license == NULL ? "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==" : license, errorMsgBuffer, 512);
+	int ret = DBR_InitLicense(license == NULL ? "LICENSE-KEY" : license, errorMsgBuffer, 512);
 	printf("DBR_InitLicense: %s\n", errorMsgBuffer);
 
 	// Load the configuration from a template file

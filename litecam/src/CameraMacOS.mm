@@ -118,7 +118,7 @@ bool Camera::Open(int cameraIndex)
         }
 
         AVCaptureSession *cs = [[AVCaptureSession alloc] init];
-        captureSession = (void *)cs;
+        captureSession = (__bridge void *)cs;
         if (![cs canAddInput:input])
         {
             std::cerr << "Cannot add device input to session." << std::endl;
@@ -131,7 +131,7 @@ bool Camera::Open(int cameraIndex)
         output.videoSettings = @{(NSString *)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA)};
         output.alwaysDiscardsLateVideoFrames = YES;
 
-        videoOutput = (void *)output;
+        videoOutput = (__bridge void *)output;
 
         if (![cs canAddOutput:output])
         {
@@ -265,37 +265,52 @@ std::vector<MediaTypeInfo> Camera::ListSupportedMediaTypes()
 
     AVCaptureSession *session = (__bridge AVCaptureSession *)captureSession;
 
-    if (!session || session.inputs.count == 0) {
+    if (!session || session.inputs.count == 0)
+    {
         std::cerr << "No inputs found in capture session." << std::endl;
         return mediaTypes;
     }
 
-    AVCaptureDeviceInput *input = (__bridge AVCaptureDeviceInput *)session.inputs.firstObject;
-    AVCaptureDevice *device = input.device;
+    AVCaptureDeviceInput *input = nil;
+    if ([session.inputs.firstObject isKindOfClass:[AVCaptureDeviceInput class]])
+    {
+        input = (AVCaptureDeviceInput *)session.inputs.firstObject;
+    }
+    else
+    {
+        std::cerr << "Error: First input is not an AVCaptureDeviceInput." << std::endl;
+        return mediaTypes; 
+    }
 
-    if (!device) {
+    AVCaptureDevice *device = input.device;
+    if (!device)
+    {
         std::cerr << "No device found." << std::endl;
         return mediaTypes;
     }
 
-    for (AVCaptureDeviceFormat *format in device.formats) {
+    // Iterate over all available formats for the device
+    for (AVCaptureDeviceFormat *format in device.formats)
+    {
         MediaTypeInfo mediaType = {};
         CMFormatDescriptionRef formatDescription = format.formatDescription;
         FourCharCode mediaSubType = CMFormatDescriptionGetMediaSubType(formatDescription);
 
-        // Store width and height
+        // Get width and height from format description
         CMVideoDimensions dimensions = CMVideoFormatDescriptionGetDimensions(formatDescription);
         mediaType.width = dimensions.width;
         mediaType.height = dimensions.height;
 
-        // Convert mediaSubType to a string
-        snprintf(mediaType.subtypeName, sizeof(mediaType.subtypeName), "Format %.4s", (char *)&mediaSubType);
+        // Convert FourCharCode (mediaSubType) to a readable string
+        snprintf(mediaType.subtypeName, sizeof(mediaType.subtypeName), "%.4s", (char *)&mediaSubType);
 
+        // Add the media type info to the list
         mediaTypes.push_back(mediaType);
     }
 
     return mediaTypes;
 }
+
 
 void ReleaseFrame(FrameData &frame)
 {
