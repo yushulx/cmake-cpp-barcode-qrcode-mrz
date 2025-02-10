@@ -25,7 +25,7 @@
 #include "DynamsoftCodeParser.h"
 #include "DynamsoftLicense.h"
 
-#define DCV_VERSION                  "2.4.10.1677"
+#define DCV_VERSION                  "2.4.20.2248"
 
 /**Enumeration section*/
 
@@ -864,6 +864,12 @@ namespace dynamsoft
 			virtual void OnParsedResultsReceived(dcp::CParsedResult* pResult);
 
 			virtual void ClearStatus();
+
+			/**
+			* Initializes the filter. It will be called by Capture Vision Router before using the filter.
+			*
+			*/
+			virtual void Init();
 
 		};
 

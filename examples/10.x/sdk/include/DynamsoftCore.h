@@ -1,5 +1,5 @@
 #pragma once
-#define DYNAMSOFT_CORE_VERSION "3.2.40.1677"
+#define DYNAMSOFT_CORE_VERSION "3.4.20.2248"
 
 /**Enumeration section*/
 
@@ -186,6 +186,8 @@ typedef enum ErrorCode {
 	/**Failed to load the PDF library.*/
 	EC_PDF_LIBRARY_LOAD_FAILED = -10075,
 
+	/**The license is initialized successfully but detected invalid content in your key.*/
+	EC_LICENSE_WARNING = -10076,
 	/** -20000~-29999: DLS license error code. */
 	/**No license.*/
 	EC_NO_LICENSE = -20000,
@@ -279,6 +281,8 @@ typedef enum ErrorCode {
 	/**The Pharmacode license is invalid.*/
 	EC_PHARMACODE_LICENSE_INVALID = -30062,
 
+	/**The barcode license is not found.*/
+	EC_BARCODE_READER_LICENSE_NOT_FOUND = -30063,
 
 	/**-40000~-49999: DLR error code*/
 	/**Character Model file is not found*/
@@ -289,10 +293,15 @@ typedef enum ErrorCode {
 	/**There is a conflict in the regex of TextLineGroup. */
 	EC_TEXT_LINE_GROUP_REGEX_CONFLICT = -40102,
 
+	/**The label recognizer license is not found.*/
+	EC_LABEL_RECOGNIZER_LICENSE_NOT_FOUND = -40103,
+
 	/**-50000~-59999: DDN error code*/
 	/*The quardrilateral is invalid*/
 	EC_QUADRILATERAL_INVALID = -50057,
 
+	/**The document normalizer license is not found.*/
+	EC_DOCUMENT_NORMALIZER_LICENSE_NOT_FOUND = -50058,
 
 	/**-60000~-69999: DCE error code*/
 	/**-70000~-79999: Panorama error code*/
@@ -332,7 +341,10 @@ typedef enum ErrorCode {
 	EC_VIN_LICENSE_INVALID = -90010,
 
 	/*The license for parsing customized code type is invalid.*/
-	EC_CUSTOMIZED_CODE_TYPE_LICENSE_INVALID = -90011
+	EC_CUSTOMIZED_CODE_TYPE_LICENSE_INVALID = -90011,
+
+	/**The code parser license is not found.*/
+	EC_CODE_PARSER_LICENSE_NOT_FOUND = -90012
 
 } ErrorCode;
 

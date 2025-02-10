@@ -13,7 +13,7 @@
 
 
 #include"DynamsoftCaptureVisionRouter.h"
-#define DISA_VERSION "1.2.30.1677"
+#define DISA_VERSION "1.4.20.2248"
 
 #ifdef __cplusplus
 
@@ -37,6 +37,7 @@ namespace dynamsoft {
 			 */
 			static const char* GetVersion();
 		};
+
 		/**
 		* The CMultiFrameResultCrossFilter class is responsible for filtering captured results.It contains 
 		* several callback functions for different types of results,including raw image,decoded barcodes, 
@@ -51,6 +52,7 @@ namespace dynamsoft {
 
 		public:
 			CMultiFrameResultCrossFilter();
+			CMultiFrameResultCrossFilter(CCaptureVisionRouter* router);
 			virtual ~CMultiFrameResultCrossFilter();
 
 			/**
@@ -58,10 +60,10 @@ namespace dynamsoft {
 			* of video streaming recognition results.
 			*
 			* @param [in] resultItemTypes The or value of the captured result item types.
-			* @param [in] enable Set whether to enable result verification.
+			* @param [in] enabled Set whether to enable result verification.
 			*
 			*/
-			void EnableResultCrossVerification(int resultItemTypes, bool enable);
+			void EnableResultCrossVerification(int resultItemTypes, bool enabled);
 
 			/**
 			* Determines whether the result verification feature is enabled for
@@ -84,10 +86,10 @@ namespace dynamsoft {
 			* the same quadrilateral.
 			*
 			* @param [in] resultItemTypes The or value of the captured result item types.
-			* @param [in] enable Set whether to enable result duplicate filter.
+			* @param [in] enabled Set whether to enable result duplicate filter.
 			*
 			*/
-			void EnableResultDeduplication(int resultItemTypes, bool enable);
+			void EnableResultDeduplication(int resultItemTypes, bool enabled);
 
 			/**
 			* Determines whether the duplicate filter feature is enabled for the specific result item type.
@@ -123,6 +125,40 @@ namespace dynamsoft {
 			*/
 			int GetDuplicateForgetTime(CapturedResultItemType type) const;
 
+			/**
+			* Sets the max referencing frames count for the to-the-latest overlapping feature.
+			*
+			* @param [in] resultItemTypes Specifies one or multiple specific result item types, which can be defined using CapturedResultItemType.
+			* @param [in] maxOverlappingFrames The max referencing frames count for the to-the-latest overlapping feature.
+			*/
+			void SetMaxOverlappingFrames(int resultItemTypes, int maxOverlappingFrames);
+
+			/**
+			* Gets the max referencing frames count for the to-the-latest overlapping feature.
+			*
+			* @param [in] resultItemType Specifies a specific result item type, which can be defined using CapturedResultItemType.
+			* @return Returns the max referencing frames count for the to-the-latest overlapping feature.
+			*/
+			int GetMaxOverlappingFrames(CapturedResultItemType resultItemType) const;
+
+			/**
+			* Enable to-the-latest overlapping feature. The output decoded barcode result will become a combination of the recent results if the  latest frame is proved to be similar with the previous.
+			*
+			* @param [in] resultItemTypes The or value of the captured result item types.
+			* @param [in] enabled Set whether to enable to-the-latest overlapping.
+			*
+			*/
+			void EnableLatestOverlapping(int resultItemTypes, bool enabled);
+
+			/**
+			* Determines whether the to-the-latest overlapping feature is enabled for the specific result item type.
+			*
+			* @param [in] type The specific captured result item type.
+			* @return Returns a bool value indicating whether to-the-latest overlapping is
+			* enabled for the specific captured result item type.
+			*/
+			bool IsLatestOverlappingEnabled(CapturedResultItemType type) const;
+
 			virtual void OnOriginalImageResultReceived(COriginalImageResultItem* pResult);
 
 			virtual void OnDecodedBarcodesReceived(dbr::CDecodedBarcodesResult* pResult);
@@ -136,6 +172,8 @@ namespace dynamsoft {
 			virtual void OnParsedResultsReceived(dcp::CParsedResult* pResult);
 
 			virtual void ClearStatus();
+
+			virtual void Init();
 
 		};
 
