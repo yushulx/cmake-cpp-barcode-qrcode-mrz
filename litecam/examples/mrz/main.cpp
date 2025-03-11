@@ -182,80 +182,37 @@ std::mutex textResultsMutex;
 class MyCapturedResultReceiver : public CCapturedResultReceiver
 {
 public:
-    virtual void OnRecognizedTextLinesReceived(CRecognizedTextLinesResult *pResult) override
+    virtual void OnCapturedResultReceived(CCapturedResult *capturedResult) override
     {
         std::lock_guard<std::mutex> lock(textResultsMutex);
         textResults.clear();
 
-        const CImageTag *tag = pResult->GetOriginalImageTag();
-
-        if (tag == nullptr)
+        CRecognizedTextLinesResult *textLineResult = capturedResult->GetRecognizedTextLinesResult();
+        if (textLineResult == nullptr)
         {
             return;
         }
 
-        if (pResult->GetErrorCode() != EC_OK)
+        int lCount = textLineResult->GetItemsCount();
+        for (int li = 0; li < lCount; ++li)
         {
-            cout << "Error: " << pResult->GetErrorString() << endl;
+            TextResult textResult;
+
+            const CTextLineResultItem *textLine = textLineResult->GetItem(li);
+            CPoint *points = textLine->GetLocation().points;
+            textResult.textLinePoints.push_back(Point(points[0][0], points[0][1]));
+            textResult.textLinePoints.push_back(Point(points[1][0], points[1][1]));
+            textResult.textLinePoints.push_back(Point(points[2][0], points[2][1]));
+            textResult.textLinePoints.push_back(Point(points[3][0], points[3][1]));
+
+            const CParsedResultItem *item = capturedResult->GetParsedResult()->GetItem(li);
+            MRZResult mrzResult;
+            mrzResult.FromParsedResultItem(item);
+
+            textResult.info = mrzResult;
+
+            textResults.push_back(textResult);
         }
-        else
-        {
-            int lCount = pResult->GetItemsCount();
-            for (int li = 0; li < lCount; ++li)
-            {
-                TextResult result;
-
-                const CTextLineResultItem *textLine = pResult->GetItem(li);
-                CPoint *points = textLine->GetLocation().points;
-                result.textLinePoints.push_back(Point(points[0][0], points[0][1]));
-                result.textLinePoints.push_back(Point(points[1][0], points[1][1]));
-                result.textLinePoints.push_back(Point(points[2][0], points[2][1]));
-                result.textLinePoints.push_back(Point(points[3][0], points[3][1]));
-
-                result.id = tag->GetImageId();
-                textResults.push_back(result);
-            }
-        }
-    }
-
-    virtual void OnParsedResultsReceived(CParsedResult *pResult)
-    {
-        if (pResult == nullptr)
-        {
-            return;
-        }
-
-        const CImageTag *tag = pResult->GetOriginalImageTag();
-
-        if (tag == nullptr)
-        {
-            return;
-        }
-
-        if (pResult->GetErrorCode() != EC_OK)
-        {
-            cout << "Error: " << pResult->GetErrorString() << endl;
-        }
-        else
-        {
-            int lCount = pResult->GetItemsCount();
-            for (int i = 0; i < lCount; i++)
-            {
-                const CParsedResultItem *item = pResult->GetItem(i);
-
-                MRZResult result;
-                result.FromParsedResultItem(item);
-                cout << result.ToString() << endl;
-
-                if (textResults[0].id == tag->GetImageId())
-                {
-                    std::lock_guard<std::mutex> lock(textResultsMutex);
-                    textResults[0].info = result;
-                }
-            }
-        }
-
-        pResult->Release();
     }
 };
 
@@ -280,9 +237,8 @@ int main()
 {
     int iRet = -1;
     char szErrorMsg[256];
-    // Initialize license.
     // Request a trial from https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform
-    iRet = CLicenseManager::InitLicense("LICENSE-KEY", szErrorMsg, 256);
+    iRet = CLicenseManager::InitLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==", szErrorMsg, 256);
     if (iRet != EC_OK)
     {
         std::cout << szErrorMsg << std::endl;
@@ -313,6 +269,12 @@ int main()
 
     if (camera.Open(0))
     {
+        // bool success = camera.SetResolution(1280, 720);
+        // if (!success)
+        // {
+        //     std::cerr << "Failed to set resolution." << std::endl;
+        //     return -1;
+        // }
         // Create a window
         CameraWindow window(camera.frameWidth, camera.frameHeight, "Camera Stream");
         if (!window.Create())
@@ -334,18 +296,13 @@ int main()
                 // Display the frame
                 window.ShowFrame(frame.rgbData, frame.width, frame.height);
 
-                CFileImageTag tag(nullptr, 0, 0);
-                tag.SetImageId(i);
-                i++;
-                if (i == 10000)
-                    i = 0;
                 CImageData data(frame.size,
                                 frame.rgbData,
                                 frame.width,
                                 frame.height,
                                 frame.width * 3,
                                 IPF_RGB_888,
-                                0, &tag);
+                                0, 0);
 
                 fetcher->MyAddImageToBuffer(&data);
 
@@ -409,4 +366,3 @@ int main()
     std::cout << "Done.\n";
     return 0;
 }
-/////
