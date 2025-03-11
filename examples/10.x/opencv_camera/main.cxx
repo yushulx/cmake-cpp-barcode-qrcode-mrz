@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
 	char szErrorMsg[256];
 	// Initialize license.
 	// Request a trial from https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform
-	iRet = CLicenseManager::InitLicense("DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9", szErrorMsg, 256);
+	iRet = CLicenseManager::InitLicense("LICENSE-KEY", szErrorMsg, 256);
 	if (iRet != EC_OK)
 	{
 		cout << szErrorMsg << endl;

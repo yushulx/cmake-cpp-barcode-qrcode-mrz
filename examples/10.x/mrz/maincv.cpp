@@ -299,13 +299,13 @@ int main(int argc, char *argv[])
 	CCapturedResultReceiver *capturedReceiver = new MyCapturedResultReceiver;
 	cvr->AddResultReceiver(capturedReceiver);
 
-	errorCode = cvr->InitSettingsFromFile("MRZ.json", errorMsg, 512);
-	if (errorCode != EC_OK)
-	{
-		cout << "error:" << errorMsg << endl;
-	}
+	// errorCode = cvr->InitSettingsFromFile("MRZ.json", errorMsg, 512);
+	// if (errorCode != EC_OK)
+	// {
+	// 	cout << "error:" << errorMsg << endl;
+	// }
 
-	errorCode = cvr->StartCapturing("", false, errorMsg, 512);
+	errorCode = cvr->StartCapturing("ReadPassportAndId", false, errorMsg, 512);
 
 	if (errorCode != EC_OK)
 	{
