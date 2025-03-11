@@ -114,7 +114,7 @@
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y "$(ProjectDir)\..\sdk\platforms\win\bin\*.dll" "$(OutDir)"
-xcopy /Y "$(ProjectDir)\..\sdk\DBR-PresetTemplates.json" "$(OutDir)"</Command>
+xcopy /Y "$(ProjectDir)\..\sdk\Templates\DBR-PresetTemplates.json" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

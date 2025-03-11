@@ -1,0 +1,299 @@
+{
+    "BarcodeFormatSpecificationOptions": [
+        {
+            "BarcodeFormatIds": [
+                "BF_CODE_39_EXTENDED"
+            ],
+            "BarcodeTextRegExPattern": "(I{0,1})([0-9A-HJ-NPR-Z]{9}[1-9A-HJ-NPR-TV-Y][0-9A-HJ-NPR-Z]{2}[0-9]{5})",
+            "Name": "bf_vin_code_39_extended"
+        },
+        {
+            "BarcodeFormatIds": [
+                "BF_DATAMATRIX",
+                "BF_QR_CODE"
+            ],
+            "BarcodeTextRegExPattern": "[0-9A-HJ-NPR-Z]{9}[1-9A-HJ-NPR-TV-Y][0-9A-HJ-NPR-Z]{2}[0-9]{5}",
+            "Name": "bf_vin_qr_dm"
+        }
+    ],
+    "BarcodeReaderTaskSettingOptions": [
+        {
+            "Name": "task_vin_barcode",
+            "ExpectedBarcodesCount": 1,
+            "BarcodeFormatIds": [
+                "BF_CODE_39_EXTENDED",
+                "BF_QR_CODE",
+                "BF_DATAMATRIX"
+            ],
+            "BarcodeFormatSpecificationNameArray": [
+                "bf_vin_code_39_extended",
+                "bf_vin_qr_dm"
+            ],
+            "SectionArray": [
+                {
+                    "Section": "ST_REGION_PREDETECTION",
+                    "ImageParameterName": "ip_localize_barcode",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_PREDETECT_REGIONS"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_BARCODE_LOCALIZATION",
+                    "ImageParameterName": "ip_localize_barcode",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_LOCALIZE_CANDIDATE_BARCODES"
+                        },
+                        {
+                            "Stage": "SST_LOCALIZE_BARCODES"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_BARCODE_DECODING",
+                    "ImageParameterName": "ip_decode_barcode",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_RESIST_DEFORMATION"
+                        },
+                        {
+                            "Stage": "SST_COMPLEMENT_BARCODE"
+                        },
+                        {
+                            "Stage": "SST_SCALE_BARCODE_IMAGE"
+                        },
+                        {
+                            "Stage": "SST_DECODE_BARCODES"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "LabelRecognizerTaskSettingOptions": [
+        {
+            "Name": "task_vin_text",
+            "TextLineSpecificationNameArray": [
+                "tls_vin_text"
+            ],
+            "SectionArray": [
+                {
+                    "Section": "ST_REGION_PREDETECTION",
+                    "ImageParameterName": "ip_recognize_text",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_PREDETECT_REGIONS"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_LOCALIZATION",
+                    "ImageParameterName": "ip_recognize_text",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_LOCALIZE_TEXT_LINES"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_RECOGNITION",
+                    "ImageParameterName": "ip_recognize_text",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_RECOGNIZE_RAW_TEXT_LINES"
+                        },
+                        {
+                            "Stage": "SST_ASSEMBLE_TEXT_LINES"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "TextLineSpecificationOptions": [
+        {
+            "Name": "tls_vin_text",
+            "CharacterModelName": "VINCharRecognition",
+            "StringRegExPattern": "[0-9A-HJ-NPR-Z]{9}[1-9A-HJ-NPR-TV-Y][0-9A-HJ-NPR-Z]{2}[0-9]{5}",
+            "CharHeightRange": [
+                5,
+                1000,
+                1
+            ],
+            "StringLengthRange": [
+                17,
+                17
+            ],
+            "OutputResults": 1
+        }
+    ],
+    "CaptureVisionTemplates": [
+        {
+            "Name": "ReadVINBarcode",
+            "ImageROIProcessingNameArray": [
+                "roi_vin_barcode"
+            ],
+            "SemanticProcessingNameArray": [
+                "sp_vin"
+            ]
+        },
+        {
+            "Name": "ReadVINText",
+            "ImageROIProcessingNameArray": [
+                "roi_vin_text"
+            ],
+            "SemanticProcessingNameArray": [
+                "sp_vin"
+            ]
+        },
+        {
+            "Name": "ReadVIN",
+            "ImageROIProcessingNameArray": [
+                "roi_vin_barcode",
+                "roi_vin_text"
+            ],
+            "SemanticProcessingNameArray": [
+                "sp_vin"
+            ]
+        }
+    ],
+    "ImageParameterOptions": [
+        {
+            "Name": "ip_localize_barcode",
+            "ApplicableStages": [
+                {
+                    "Stage": "SST_BINARIZE_IMAGE",
+                    "BinarizationModes": [
+                        {
+                            "Mode": "BM_LOCAL_BLOCK"
+                           
+                        }
+                    ]
+                },
+                {
+                    "Stage": "SST_BINARIZE_TEXTURE_REMOVED_GRAYSCALE",
+                    "BinarizationModes": [
+                        {
+                            "Mode": "BM_LOCAL_BLOCK",
+                            "MorphOperation": "Erode"
+                        }
+                    ]
+                },
+                {
+                    "Stage": "SST_TRANSFORM_GRAYSCALE",
+                    "GrayscaleTransformationModes": [
+                        {
+                            "Mode": "GTM_ORIGINAL"
+                        },
+                        {
+                            "Mode": "GTM_INVERTED"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "Name": "ip_decode_barcode",
+            "ApplicableStages": [
+                {
+                    "Stage": "SST_TRANSFORM_GRAYSCALE",
+                    "GrayscaleTransformationModes": [
+                        {
+                            "Mode": "GTM_ORIGINAL"
+                        }
+                    ]
+                },
+                {
+                    "Stage": "SST_SCALE_IMAGE",
+                    "ImageScaleSetting": {
+                        "ScaleType": "ST_SCALE_DOWN",
+                        "ReferenceEdge": "RE_SHORTER_EDGE",
+                        "EdgeLengthThreshold": 99999
+                    }
+                }
+            ]
+        },
+        {
+            "Name": "ip_recognize_text",
+            "ApplicableStages": [
+                {
+                    "Stage": "SST_DETECT_TEXT_ZONES",
+                    "TextDetectionMode": {
+                        "Mode": "TTDM_LINE",
+                        "Direction": "HORIZONTAL",
+                        "CharHeightRange": [
+                            5,
+                            1000,
+                            1
+                        ],
+                        "Sensitivity": 7
+                    }
+                },
+                {
+                    "Stage": "SST_TRANSFORM_GRAYSCALE",
+                    "GrayscaleTransformationModes": [
+                        {
+                            "Mode": "GTM_ORIGINAL"
+                        },
+                        {
+                            "Mode": "GTM_INVERTED"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "TargetROIDefOptions": [
+        {
+            "Name": "roi_vin_barcode",
+            "TaskSettingNameArray": [
+                "task_vin_barcode"
+            ]
+        },
+        {
+            "Name": "roi_vin_text",
+            "TaskSettingNameArray": [
+                "task_vin_text"
+            ]
+        }
+    ],
+    "CaptureVisionModelOptions": [
+        {
+            "Name": "VINCharRecognition",
+            "MaxModelInstances": 4,
+            "ModelArgs": {
+                "CharSet": {
+                    "ExcludeChars": [
+                        "O",
+                        "Q",
+                        "I"
+                    ]
+                }
+            }
+        }
+    ],
+    "SemanticProcessingOptions": [
+        {
+            "Name": "sp_vin",
+            "ReferenceObjectFilter": {
+                "ReferenceTargetROIDefNameArray": [
+                    "roi_vin_barcode",
+                    "roi_vin_text"
+                ]
+            },
+            "TaskSettingNameArray": [
+                "dcp_vin"
+            ]
+        }
+    ],
+    "CodeParserTaskSettingOptions": [
+        {
+            "Name": "dcp_vin",
+            "CodeSpecifications": [
+                "VIN"
+            ]
+        }
+    ]
+}

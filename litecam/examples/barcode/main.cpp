@@ -2,7 +2,6 @@
 #include <vector>
 #include <mutex>
 
-#include "template.h"
 #include "DynamsoftCaptureVisionRouter.h"
 #include "DynamsoftUtility.h"
 #include "Camera.h"
@@ -20,7 +19,7 @@ int main()
     char szErrorMsg[256];
     // Initialize license.
     // Request a trial from https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform
-    iRet = CLicenseManager::InitLicense("LICENSE-KEY", szErrorMsg, 256);
+    iRet = CLicenseManager::InitLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==", szErrorMsg, 256);
     if (iRet != EC_OK)
     {
         std::cout << szErrorMsg << std::endl;
@@ -29,12 +28,12 @@ int main()
     char errorMsg[512] = {0};
 
     CCaptureVisionRouter *cvr = new CCaptureVisionRouter;
-    errorCode = cvr->InitSettings(jsonString.c_str(), errorMsg, 512);
-    if (errorCode != EC_OK)
-    {
-        std::cout << "error:" << errorMsg << std::endl;
-        return -1;
-    }
+    // errorCode = cvr->InitSettings(jsonString.c_str(), errorMsg, 512);
+    // if (errorCode != EC_OK)
+    // {
+    //     std::cout << "error:" << errorMsg << std::endl;
+    //     return -1;
+    // }
 
     Camera camera;
 
@@ -71,7 +70,7 @@ int main()
                                 frame.width * 3,
                                 IPF_RGB_888,
                                 0, 0);
-                CCapturedResult *result = cvr->Capture(&data, "");
+                CCapturedResult *result = cvr->Capture(&data, CPresetTemplate::PT_READ_BARCODES);
 
                 if (result)
                 {

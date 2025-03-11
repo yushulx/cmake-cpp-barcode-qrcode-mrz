@@ -74,3 +74,16 @@ elseif(UNIX)
     $<TARGET_FILE_DIR:BarcodeScanner>)
 endif()
 
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:BarcodeScanner>/Templates
+COMMAND ${CMAKE_COMMAND} -E copy_directory
+${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/Templates
+$<TARGET_FILE_DIR:BarcodeScanner>/Templates)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:BarcodeScanner>/Models
+COMMAND ${CMAKE_COMMAND} -E copy_directory
+${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/Models
+$<TARGET_FILE_DIR:BarcodeScanner>/Models)
+

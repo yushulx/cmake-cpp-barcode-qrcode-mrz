@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
 	char szErrorMsg[256];
 	// Initialize license.
 	// Request a trial from https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform
-	iRet = CLicenseManager::InitLicense("LICENSE-KEY", szErrorMsg, 256);
+	iRet = CLicenseManager::InitLicense("DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9", szErrorMsg, 256);
 	if (iRet != EC_OK)
 	{
 		cout << szErrorMsg << endl;
@@ -327,12 +327,12 @@ int main(int argc, char *argv[])
 
 	if (use_ocr)
 	{
-		cvr->InitSettings(settings.c_str(), errorMsg, 512);
-		errorCode = cvr->StartCapturing("ReadBarcode&AccompanyText", false, errorMsg, 512);
+		// cvr->InitSettings(settings.c_str(), errorMsg, 512);
+		// errorCode = cvr->StartCapturing("ReadBarcode&AccompanyText", false, errorMsg, 512);
 	}
 	else
 	{
-		errorCode = cvr->StartCapturing(CPresetTemplate::PT_READ_BARCODES, false, errorMsg, 512);
+		errorCode = cvr->StartCapturing("", false, errorMsg, 512);
 	}
 
 	if (errorCode != EC_OK)
@@ -417,10 +417,10 @@ int main(int argc, char *argv[])
 			{
 				if (!use_ocr)
 				{
-					cvr->StopCapturing(false, true);
-					use_ocr = true;
-					cvr->InitSettings(settings.c_str(), errorMsg, 512);
-					errorCode = cvr->StartCapturing("ReadBarcode&AccompanyText", false, errorMsg, 512);
+					// cvr->StopCapturing(false, true);
+					// use_ocr = true;
+					// cvr->InitSettings(settings.c_str(), errorMsg, 512);
+					// errorCode = cvr->StartCapturing("ReadBarcode&AccompanyText", false, errorMsg, 512);
 				}
 				else
 				{

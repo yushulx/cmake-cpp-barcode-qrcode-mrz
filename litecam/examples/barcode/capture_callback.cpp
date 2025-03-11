@@ -2,7 +2,6 @@
 #include <deque>
 #include <vector>
 #include <mutex>
-#include "template.h"
 #include "DynamsoftCaptureVisionRouter.h"
 #include "DynamsoftUtility.h"
 #include "Camera.h"
@@ -74,12 +73,12 @@ int main()
     int errorCode = 1;
     char errorMsg[512] = {0};
     CCaptureVisionRouter *cvr = new CCaptureVisionRouter;
-    errorCode = cvr->InitSettings(jsonString.c_str(), errorMsg, 512);
-    if (errorCode != EC_OK)
-    {
-        std::cout << "error:" << errorMsg << std::endl;
-        return -1;
-    }
+    // errorCode = cvr->InitSettings(jsonString.c_str(), errorMsg, 512);
+    // if (errorCode != EC_OK)
+    // {
+    //     std::cout << "error:" << errorMsg << std::endl;
+    //     return -1;
+    // }
 
     MyVideoFetcher *fetcher = new MyVideoFetcher();
     cvr->SetInput(fetcher);
@@ -95,7 +94,7 @@ int main()
     CCapturedResultReceiver *capturedReceiver = new MyCapturedResultReceiver;
     cvr->AddResultReceiver(capturedReceiver);
 
-    cvr->StartCapturing("", false, errorMsg, 512);
+    cvr->StartCapturing(CPresetTemplate::PT_READ_BARCODES, false, errorMsg, 512);
 
     Camera camera;
     std::cout << "Capturing frames...\n";

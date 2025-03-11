@@ -203,6 +203,34 @@ public:
 	}
 };
 
+void PrintResult(CParsedResult *pResult)
+{
+	const CFileImageTag *tag = dynamic_cast<const CFileImageTag *>(pResult->GetOriginalImageTag());
+
+	cout << "File: " << tag->GetFilePath() << endl;
+	cout << "Page: " << tag->GetPageNumber() << endl;
+
+	if (pResult->GetErrorCode() != EC_OK && pResult->GetErrorCode() != EC_UNSUPPORTED_JSON_KEY_WARNING)
+	{
+		cout << "Error: " << pResult->GetErrorString() << endl;
+	}
+	else
+	{
+		int lCount = pResult->GetItemsCount();
+		cout << "Parsed " << lCount << " MRZ Zones" << endl;
+		for (int i = 0; i < lCount; i++)
+		{
+			const CParsedResultItem *item = pResult->GetItem(i);
+
+			MRZResult result;
+			result.FromParsedResultItem(item);
+			cout << result.ToString() << endl;
+		}
+	}
+
+	cout << endl;
+}
+
 int main(int argc, char *argv[])
 {
 	printf("*************************************************\r\n");
@@ -214,16 +242,16 @@ int main(int argc, char *argv[])
 	char szErrorMsg[256];
 	// Initialize license.
 	// Request a trial from https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform
-	iRet = CLicenseManager::InitLicense("LICENSE-KEY", szErrorMsg, 256);
+	iRet = CLicenseManager::InitLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==", szErrorMsg, 256);
 	if (iRet != EC_OK)
 	{
 		cout << szErrorMsg << endl;
 	}
-	int errorCode = 1;
+	int errorCode = 0;
 	char errorMsg[512] = {0};
 
 	CCaptureVisionRouter *cvr = new CCaptureVisionRouter;
-	errorCode = cvr->InitSettingsFromFile("MRZ.json", errorMsg, 512);
+	// errorCode = cvr->InitSettingsFromFile("MRZ.json", errorMsg, 512);
 	if (errorCode != EC_OK)
 	{
 		cout << "error:" << errorMsg << endl;
@@ -240,24 +268,30 @@ int main(int argc, char *argv[])
 		float costTime = 0.0;
 		int errorCode = 0;
 
-		CCapturedResult *captureResult = cvr->Capture(pszImageFile);
-		if (captureResult)
+		CCapturedResult *result = cvr->Capture(pszImageFile, "ReadPassportAndId");
+		if (result->GetErrorCode() == ErrorCode::EC_UNSUPPORTED_JSON_KEY_WARNING)
 		{
-			CParsedResult *parsedResult = captureResult->GetParsedResult();
-			if (parsedResult)
-			{
-				for (int i = 0; i < parsedResult->GetItemsCount(); i++)
-				{
-					const CParsedResultItem *item = parsedResult->GetItem(i);
-					MRZResult result;
-					result.FromParsedResultItem(item);
-					cout << result.ToString() << endl;
-				}
-				parsedResult->Release();
-			}
-
-			captureResult->Release();
+			cout << "Capture warning: Warning Code: " << result->GetErrorCode() << ", Warning String: " << result->GetErrorString() << endl;
 		}
+		else if (result->GetErrorCode() != ErrorCode::EC_OK)
+		{
+			cout << "Capture failed: Error Code: " << result->GetErrorCode() << ", Error String: " << result->GetErrorString() << endl;
+		}
+		CParsedResult *dcpResult = result->GetParsedResult();
+		if (dcpResult == NULL || dcpResult->GetItemsCount() == 0)
+		{
+			cout << "No parsed results." << endl;
+		}
+		else
+		{
+			PrintResult(dcpResult);
+		}
+		// 5. Release the parsed result.
+		if (dcpResult)
+			dcpResult->Release();
+		// 6. Release the capture result.
+		if (result)
+			result->Release();
 	}
 
 	delete cvr, cvr = NULL;

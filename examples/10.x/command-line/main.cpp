@@ -18,7 +18,6 @@
 
 #include "DynamsoftCaptureVisionRouter.h"
 #include "DynamsoftUtility.h"
-#include "template.h"
 
 using namespace std;
 using namespace dynamsoft::license;
@@ -137,16 +136,16 @@ int main(int argc, char *argv[])
 	char szErrorMsg[256];
 	// Initialize license.
 	// Request a trial from https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform
-	iRet = CLicenseManager::InitLicense("LICENSE-KEY", szErrorMsg, 256);
+	iRet = CLicenseManager::InitLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==", szErrorMsg, 256);
 	if (iRet != EC_OK)
 	{
 		cout << szErrorMsg << endl;
 	}
-	int errorCode = 1;
+	int errorCode = 0;
 	char errorMsg[512] = {0};
 
 	CCaptureVisionRouter *cvr = new CCaptureVisionRouter;
-	errorCode = cvr->InitSettings(jsonString.c_str(), errorMsg, 512);
+	// errorCode = cvr->InitSettingsFromFile("DBR-PresetTemplates.json", errorMsg, 512);
 	if (errorCode != EC_OK)
 	{
 		cout << "error:" << errorMsg << endl;

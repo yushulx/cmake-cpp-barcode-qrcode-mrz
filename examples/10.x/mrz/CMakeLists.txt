@@ -92,20 +92,20 @@ else()
     $<TARGET_FILE_DIR:main>)
 endif()
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy
-"${PROJECT_SOURCE_DIR}/../sdk/DBR-PresetTemplates.json"
-$<TARGET_FILE_DIR:main>/DBR-PresetTemplates.json)
+# add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+# COMMAND ${CMAKE_COMMAND} -E copy
+# "${PROJECT_SOURCE_DIR}/../sdk/Templates/DBR-PresetTemplates.json"
+# $<TARGET_FILE_DIR:main>/DBR-PresetTemplates.json)
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy
-"${PROJECT_SOURCE_DIR}/../sdk/DLR-PresetTemplates.json"
-$<TARGET_FILE_DIR:main>/DLR-PresetTemplates.json)
+# add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+# COMMAND ${CMAKE_COMMAND} -E copy
+# "${PROJECT_SOURCE_DIR}/../sdk/Templates/DLR-PresetTemplates.json"
+# $<TARGET_FILE_DIR:main>/DLR-PresetTemplates.json)
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy
-"${PROJECT_SOURCE_DIR}/../sdk/MRZ.json"
-$<TARGET_FILE_DIR:main>/MRZ.json)
+# add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+# COMMAND ${CMAKE_COMMAND} -E copy
+# "${PROJECT_SOURCE_DIR}/../sdk/Templates/MRZScanner.json"
+# $<TARGET_FILE_DIR:main>/MRZScanner.json)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy
@@ -113,10 +113,15 @@ COMMAND ${CMAKE_COMMAND} -E copy
 $<TARGET_FILE_DIR:main>/ConfusableChars.data)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/CharacterModel
+COMMAND ${CMAKE_COMMAND} -E copy
+"${PROJECT_SOURCE_DIR}/../sdk/OverlappingChars.data"
+$<TARGET_FILE_DIR:main>/OverlappingChars.data)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/Models
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-"${PROJECT_SOURCE_DIR}/../sdk/CharacterModel"
-$<TARGET_FILE_DIR:main>/CharacterModel)
+"${PROJECT_SOURCE_DIR}/../sdk/Models"
+$<TARGET_FILE_DIR:main>/Models)
 
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -124,3 +129,9 @@ COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/ParserResourc
 COMMAND ${CMAKE_COMMAND} -E copy_directory
 "${PROJECT_SOURCE_DIR}/../sdk/ParserResources"
 $<TARGET_FILE_DIR:main>/ParserResources)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/Templates
+COMMAND ${CMAKE_COMMAND} -E copy_directory
+"${PROJECT_SOURCE_DIR}/../sdk/Templates"
+$<TARGET_FILE_DIR:main>/Templates)

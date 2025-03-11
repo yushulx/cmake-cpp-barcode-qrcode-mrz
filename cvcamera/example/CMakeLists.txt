@@ -40,18 +40,24 @@ if(UNIX)
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:camera_lib> $<TARGET_FILE_DIR:camera_example>)
 endif()
 
-add_custom_command(TARGET camera_example POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy
-${CMAKE_CURRENT_SOURCE_DIR}/../../examples/10.x/sdk/DBR-PresetTemplates.json
-$<TARGET_FILE_DIR:camera_example>/DBR-PresetTemplates.json)
+# add_custom_command(TARGET camera_example POST_BUILD
+# COMMAND ${CMAKE_COMMAND} -E copy
+# ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/10.x/sdk/DBR-PresetTemplates.json
+# $<TARGET_FILE_DIR:camera_example>/DBR-PresetTemplates.json)
+
+# add_custom_command(TARGET camera_example POST_BUILD
+# COMMAND ${CMAKE_COMMAND} -E copy
+# ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/10.x/sdk/DLR-PresetTemplates.json
+# $<TARGET_FILE_DIR:camera_example>/DLR-PresetTemplates.json)
 
 add_custom_command(TARGET camera_example POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy
-${CMAKE_CURRENT_SOURCE_DIR}/../../examples/10.x/sdk/DLR-PresetTemplates.json
-$<TARGET_FILE_DIR:camera_example>/DLR-PresetTemplates.json)
-
-add_custom_command(TARGET camera_example POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:camera_lib>/CharacterModel
+COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:camera_example>/Models
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-${CMAKE_CURRENT_SOURCE_DIR}/../../examples/10.x/sdk/CharacterModel
-$<TARGET_FILE_DIR:camera_example>/CharacterModel)
+${CMAKE_CURRENT_SOURCE_DIR}/../../examples/10.x/sdk/Models
+$<TARGET_FILE_DIR:camera_example>/Models)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:camera_example>/Templates
+COMMAND ${CMAKE_COMMAND} -E copy_directory
+${CMAKE_CURRENT_SOURCE_DIR}/../../examples/10.x/sdk/Templates
+$<TARGET_FILE_DIR:camera_example>/Templates)

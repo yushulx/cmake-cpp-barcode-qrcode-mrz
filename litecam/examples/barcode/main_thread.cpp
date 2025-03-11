@@ -6,7 +6,6 @@
 #include <queue>
 #include <atomic>
 
-#include "template.h"
 #include "DynamsoftCaptureVisionRouter.h"
 #include "DynamsoftUtility.h"
 #include "Camera.h"
@@ -88,7 +87,7 @@ void ProcessFrames(CCaptureVisionRouter *cvr, ThreadSafeQueue<FrameData> &frameQ
                             frame.width * 3,
                             IPF_RGB_888,
                             0, 0);
-            CCapturedResult *captureResult = cvr->Capture(&data, "");
+            CCapturedResult *captureResult = cvr->Capture(&data, CPresetTemplate::PT_READ_BARCODES);
 
             if (captureResult)
             {
@@ -126,7 +125,7 @@ int main()
 {
     // Initialize license
     char szErrorMsg[256];
-    if (CLicenseManager::InitLicense("LICENSE-KEY", szErrorMsg, 256) != EC_OK)
+    if (CLicenseManager::InitLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==", szErrorMsg, 256) != EC_OK)
     {
         std::cerr << szErrorMsg << std::endl;
         return -1;
@@ -134,11 +133,11 @@ int main()
 
     // Initialize Capture Vision Router
     CCaptureVisionRouter *cvr = new CCaptureVisionRouter;
-    if (cvr->InitSettings(jsonString.c_str(), szErrorMsg, 256) != EC_OK)
-    {
-        std::cerr << "Error initializing CVR: " << szErrorMsg << std::endl;
-        return -1;
-    }
+    // if (cvr->InitSettings(jsonString.c_str(), szErrorMsg, 256) != EC_OK)
+    // {
+    //     std::cerr << "Error initializing CVR: " << szErrorMsg << std::endl;
+    //     return -1;
+    // }
 
     // Instantiate Camera
     Camera camera;

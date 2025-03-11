@@ -97,3 +97,20 @@ elseif(MACOS)
     $<TARGET_FILE_DIR:main>)
 endif()
 
+# Copy DBR-PresetTemplates.json to the output directory
+# add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy
+#     "${PROJECT_SOURCE_DIR}/../sdk/Templates/DBR-PresetTemplates.json"
+#     $<TARGET_FILE_DIR:main>)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/Templates
+COMMAND ${CMAKE_COMMAND} -E copy_directory
+"${PROJECT_SOURCE_DIR}/../sdk/Templates"
+$<TARGET_FILE_DIR:main>/Templates)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/Models
+COMMAND ${CMAKE_COMMAND} -E copy_directory
+"${PROJECT_SOURCE_DIR}/../sdk/Models"
+$<TARGET_FILE_DIR:main>/Models)
