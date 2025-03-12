@@ -1,6 +1,7 @@
 # C++ MRZ Scanner
 A C++ application for scanning and processing **Machine Readable Zones (MRZ)** from identification documents such as **passports**, **ID cards**, and **visas**. The application can extract standardized information such as document type, issuing country, document number, name, nationality, date of birth, gender, and expiry date.
 
+https://github.com/user-attachments/assets/46af677b-42ac-4067-bc79-508373292ed1
 
 ## Features
 - MRZ detection in images
@@ -32,3 +33,5 @@ A C++ application for scanning and processing **Machine Readable Zones (MRZ)** f
     cmake ..
     cmake --build .
     ```
+
+    ![C++ MRZ scanner for desktop](https://www.dynamsoft.com/codepool/img/2025/03/mrz-recognition-deep-learning-model.png)
