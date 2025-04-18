@@ -7,6 +7,8 @@ MESSAGE(STATUS "Build with OpenCV: ${ENABLE_OPENCV}")
 
 if (CMAKE_HOST_WIN32)
     set(WINDOWS 1)
+elseif(CMAKE_HOST_APPLE)
+    set(MACOS 1)
 elseif(CMAKE_HOST_UNIX)
     set(LINUX 1)
 endif()
@@ -55,6 +57,8 @@ elseif(LINUX)
         MESSAGE( STATUS "Link directory: ${PROJECT_SOURCE_DIR}/../sdk/platforms/linux/" )
         link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/linux/")
     endif()
+elseif(MACOS)
+    link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/macos/")
 endif()
 include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/../sdk/include/")
 
@@ -85,10 +89,15 @@ if(WINDOWS)
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${PROJECT_SOURCE_DIR}/../sdk/platforms/win/bin/"      
     $<TARGET_FILE_DIR:main>)
-else()
+elseif(LINUX)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${PROJECT_SOURCE_DIR}/../sdk/platforms/linux/"      
+    $<TARGET_FILE_DIR:main>)
+elseif(MACOS)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${PROJECT_SOURCE_DIR}/../sdk/platforms/macos/"      
     $<TARGET_FILE_DIR:main>)
 endif()
 
