@@ -5,7 +5,7 @@ MESSAGE( STATUS "PROJECT_NAME: " ${PROJECT_NAME} )
 if (CMAKE_HOST_WIN32)
     set(WINDOWS 1)
 elseif(CMAKE_HOST_APPLE)
-    set(MACOS 1)
+    set(mac 1)
 elseif(CMAKE_HOST_UNIX)
     set(LINUX 1)
 endif()
@@ -45,23 +45,23 @@ endif()
 MESSAGE( STATUS "CPU architecture ${CMAKE_SYSTEM_PROCESSOR}" )
 if(WINDOWS)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/win/bin/") 
+        link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/win") 
     else()
-        link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/win/lib/") 
+        link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/win") 
     endif()
 elseif(LINUX)
     if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
-        MESSAGE( STATUS "Link directory: ${PROJECT_SOURCE_DIR}/../sdk/platforms/linux/" )
-        link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/linux/")
+        MESSAGE( STATUS "Link directory: ${PROJECT_SOURCE_DIR}/../../../dcv/lib/linux/x64" )
+        link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/linux/x64")
     elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64) 
-        MESSAGE( STATUS "Link directory: ${PROJECT_SOURCE_DIR}/../sdk/platforms/aarch64/" )
-        link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/aarch64/") 
+        MESSAGE( STATUS "Link directory: ${PROJECT_SOURCE_DIR}/../../../dcv/lib/linux/arm64/" )
+        link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/linux/arm64/") 
     endif()
-elseif(MACOS)
-    MESSAGE( STATUS "Link directory: ${PROJECT_SOURCE_DIR}/../sdk/platforms/macos/" )
-    link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/macos/") 
+elseif(mac)
+    MESSAGE( STATUS "Link directory: ${PROJECT_SOURCE_DIR}/../../../dcv/lib/mac/" )
+    link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/mac/") 
 endif()
-include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/../sdk/include/")
+include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/../../../dcv/include/")
 
 # Add the executable
 add_executable(${PROJECT_NAME} main.cpp)
@@ -76,41 +76,35 @@ endif()
 if(WINDOWS)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${PROJECT_SOURCE_DIR}/../sdk/platforms/win/bin/"      
+    "${PROJECT_SOURCE_DIR}/../../../dcv/lib/win"      
     $<TARGET_FILE_DIR:main>)
 elseif(LINUX)
     if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/../sdk/platforms/linux/"      
+        "${PROJECT_SOURCE_DIR}/../../../dcv/lib/linux/x64"      
         $<TARGET_FILE_DIR:main>)
     elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64) 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/../sdk/platforms/aarch64/"      
+        "${PROJECT_SOURCE_DIR}/../../../dcv/lib/linux/arm64"      
         $<TARGET_FILE_DIR:main>)
     endif()
-elseif(MACOS)
+elseif(mac)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${PROJECT_SOURCE_DIR}/../sdk/platforms/macos/"      
+    "${PROJECT_SOURCE_DIR}/../../../dcv/lib/mac/"      
     $<TARGET_FILE_DIR:main>)
 endif()
-
-# Copy DBR-PresetTemplates.json to the output directory
-# add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy
-#     "${PROJECT_SOURCE_DIR}/../sdk/Templates/DBR-PresetTemplates.json"
-#     $<TARGET_FILE_DIR:main>)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/Templates
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-"${PROJECT_SOURCE_DIR}/../sdk/Templates"
+"${PROJECT_SOURCE_DIR}/../../../dcv/resource/Templates"
 $<TARGET_FILE_DIR:main>/Templates)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/Models
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-"${PROJECT_SOURCE_DIR}/../sdk/Models"
+"${PROJECT_SOURCE_DIR}/../../../dcv/resource/Models"
 $<TARGET_FILE_DIR:main>/Models)

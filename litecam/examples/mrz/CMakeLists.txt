@@ -9,9 +9,9 @@ if(WIN32)
     endif()
     
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dist/lib/windows/release ${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/platforms/win/lib)
+        link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dist/lib/windows/release ${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/lib/win)
     else()
-        link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dist/lib/windows/debug ${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/platforms/win/lib)
+        link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dist/lib/windows/debug ${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/lib/win)
     endif()
     
     set(DBR_LIBS "DynamsoftCorex64" "DynamsoftLicensex64" "DynamsoftCaptureVisionRouterx64" "DynamsoftUtilityx64")
@@ -22,7 +22,7 @@ elseif(APPLE)
 
     link_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../../dist/lib/macos
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/platforms/macos
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/lib/mac
     )
 
     set(DBR_LIBS
@@ -35,13 +35,13 @@ elseif(APPLE)
 elseif(UNIX)
     SET(CMAKE_CXX_FLAGS "-std=c++11 -O3 -Wl,-rpath=$ORIGIN")
     SET(CMAKE_INSTALL_RPATH "$ORIGIN")
-    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dist/lib/linux ${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/platforms/linux)
+    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dist/lib/linux ${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/lib/linux)
     set(DBR_LIBS "DynamsoftCore" "DynamsoftLicense" "DynamsoftCaptureVisionRouter" "DynamsoftUtility" pthread)
 endif()
 
 # Create the executable
 add_executable(${PROJECT_NAME} main.cpp)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../dist/include ${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../dist/include ${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/include)
 target_link_libraries(${PROJECT_NAME} litecam ${DBR_LIBS})
 
 if(WIN32)
@@ -59,18 +59,18 @@ if(WIN32)
 
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/platforms/win/bin/      
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/lib/win     
     $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 elseif(APPLE)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/platforms/macos
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/lib/mac
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
     )
 elseif(UNIX)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/platforms/linux/      
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/lib/linux/      
     $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 endif()
 
@@ -78,27 +78,27 @@ endif()
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${PROJECT_NAME}>/Templates
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/Templates
+${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/resource/Templates
 $<TARGET_FILE_DIR:${PROJECT_NAME}>/Templates)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${PROJECT_NAME}>/Models
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/Models
+${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/resource/Models
 $<TARGET_FILE_DIR:${PROJECT_NAME}>/Models)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${PROJECT_NAME}>/ParserResources
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/ParserResources
+${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/resource/ParserResources
 $<TARGET_FILE_DIR:${PROJECT_NAME}>/ParserResources)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy
-${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/ConfusableChars.data
+${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/resource/ConfusableChars.data
 $<TARGET_FILE_DIR:${PROJECT_NAME}>/ConfusableChars.data)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy
-${CMAKE_CURRENT_SOURCE_DIR}/../../../examples/10.x/sdk/OverlappingChars.data
+${CMAKE_CURRENT_SOURCE_DIR}/../../../dcv/resource/OverlappingChars.data
 $<TARGET_FILE_DIR:${PROJECT_NAME}>/OverlappingChars.data)

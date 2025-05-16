@@ -1,0 +1,94 @@
+{
+    "CaptureVisionTemplates": [
+        {
+            "Name": "ReadDriversLicense",
+            "ImageROIProcessingNameArray": [
+                "roi_dl_all"
+            ],
+            "SemanticProcessingNameArray": [
+                "sp_dl_all"
+            ]
+        }
+    ],
+    "TargetROIDefOptions": [
+        {
+            "Name": "roi_dl_all",
+            "TaskSettingNameArray": [
+                "task_dl_all"
+            ]
+        }
+    ],
+    "BarcodeReaderTaskSettingOptions": [
+        {
+            "Name": "task_dl_all",
+            "ExpectedBarcodesCount": 1,
+            "BarcodeFormatIds": [
+                "BF_PDF417"
+            ],
+            "SectionArray": [
+                {
+                    "Section": "ST_REGION_PREDETECTION",
+                    "ImageParameterName": "ip_default",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_PREDETECT_REGIONS"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_BARCODE_LOCALIZATION",
+                    "ImageParameterName": "ip_default",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_LOCALIZE_CANDIDATE_BARCODES"
+                        },
+                        {
+                            "Stage": "SST_LOCALIZE_BARCODES"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_BARCODE_DECODING",
+                    "ImageParameterName": "ip_default",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_RESIST_DEFORMATION"
+                        },
+                        {
+                            "Stage": "SST_COMPLEMENT_BARCODE"
+                        },
+                        {
+                            "Stage": "SST_SCALE_BARCODE_IMAGE"
+                        },
+                        {
+                            "Stage": "SST_DECODE_BARCODES"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "SemanticProcessingOptions": [
+        {
+            "Name": "sp_dl_all",
+            "ReferenceObjectFilter": {
+                "ReferenceTargetROIDefNameArray": [
+                    "roi_dl_all"
+                ]
+            },
+            "TaskSettingNameArray": [
+                "dcp_dl_all"
+            ]
+        }
+    ],
+    "CodeParserTaskSettingOptions": [
+        {
+            "Name": "dcp_dl_all",
+            "CodeSpecifications": [
+                "AAMVA_DL_ID",
+                "AAMVA_DL_ID_WITH_MAG_STRIPE",
+                "SOUTH_AFRICA_DL"
+            ]
+        }
+    ]
+}

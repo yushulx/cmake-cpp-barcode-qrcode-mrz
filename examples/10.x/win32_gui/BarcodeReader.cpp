@@ -4,17 +4,17 @@
 #include <windows.h>
 #include "framework.h"
 #include "BarcodeReader.h"
-#include "../sdk/include/DynamsoftCaptureVisionRouter.h"
+#include "../../../dcv/include/DynamsoftCaptureVisionRouter.h"
 #include <commdlg.h>
 #include <gdiplus.h>
 #include <string>
 #include <vector>
 
 #pragma comment(lib, "Gdiplus.lib")
-#pragma comment(lib, "../sdk/platforms/win/lib/DynamsoftCorex64.lib")
-#pragma comment(lib, "../sdk/platforms/win/lib/DynamsoftLicensex64.lib")
-#pragma comment(lib, "../sdk/platforms/win/lib/DynamsoftCaptureVisionRouterx64.lib")
-#pragma comment(lib, "../sdk/platforms/win/lib/DynamsoftUtilityx64.lib")
+#pragma comment(lib, "../../../dcv/lib/win/DynamsoftCorex64.lib")
+#pragma comment(lib, "../../../dcv/lib/win/DynamsoftLicensex64.lib")
+#pragma comment(lib, "../../../dcv/lib/win/DynamsoftCaptureVisionRouterx64.lib")
+#pragma comment(lib, "../../../dcv/lib/win/DynamsoftUtilityx64.lib")
 
 #define MAX_LOADSTRING 100
 
@@ -92,7 +92,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     // Initialize DBR
     char errorMsgBuffer[512];
-    const char *pLicense = "LICENSE-KEY";
+    const char *pLicense = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==";
     CLicenseManager::InitLicense(pLicense, errorMsgBuffer, 512);
     cvr = new CCaptureVisionRouter;
 

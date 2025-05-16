@@ -1,0 +1,471 @@
+{
+    "CaptureVisionTemplates": [
+        {
+            "Name": "RecognizeLetters",
+            "ImageROIProcessingNameArray": [
+                "roi-recognize-letter"
+            ]
+        },
+        {
+            "Name": "RecognizeNumbers",
+            "ImageROIProcessingNameArray": [
+                "roi-recognize-number"
+            ]
+        },
+        {
+            "Name": "RecognizeNumbersAndLetters",
+            "ImageROIProcessingNameArray": [
+                "roi-recognize-number-letter"
+            ]
+        },
+        {
+            "Name": "RecognizeNumbersAndUppercaseLetters",
+            "ImageROIProcessingNameArray": [
+                "roi-recognize-number-uppercase"
+            ]
+        },
+        {
+            "Name": "RecognizeTextLines_Default",
+            "ImageROIProcessingNameArray": [
+                "roi-recognize-textlines"
+            ]
+        },
+        {
+            "Name": "RecognizeUppercaseLetters",
+            "ImageROIProcessingNameArray": [
+                "roi-recognize-uppercase"
+            ]
+        }
+    ],
+    "TargetROIDefOptions": [
+        {
+            "Name": "roi-recognize-letter",
+            "TaskSettingNameArray": [
+                "task-recognize-letter"
+            ]
+        },
+        {
+            "Name": "roi-recognize-number",
+            "TaskSettingNameArray": [
+                "task-recognize-number"
+            ]
+        },
+        {
+            "Name": "roi-recognize-number-letter",
+            "TaskSettingNameArray": [
+                "task-recognize-number-letter"
+            ]
+        },
+        {
+            "Name": "roi-recognize-number-uppercase",
+            "TaskSettingNameArray": [
+                "task-recognize-number-uppercase"
+            ]
+        },
+        {
+            "Name": "roi-recognize-textlines",
+            "TaskSettingNameArray": [
+                "task-recognize-textlines"
+            ]
+        },
+        {
+            "Name": "roi-recognize-uppercase",
+            "TaskSettingNameArray": [
+                "task-recognize-uppercase"
+            ]
+        }
+    ],
+    "TextLineSpecificationOptions": [
+        {
+            "Name": "tls-letter",
+            "CharacterModelName": "LetterCharRecognition",
+            "OutputResults": 1
+        },
+        {
+            "Name": "tls-number",
+            "CharacterModelName": "NumberCharRecognition",
+            "OutputResults": 1
+        },
+        {
+            "Name": "tls-number-letter",
+            "CharacterModelName": "NumberLetterCharRecognition",
+            "OutputResults": 1
+        },
+        {
+            "Name": "tls-number-uppercase",
+            "CharacterModelName": "NumberUppercaseCharRecognition",
+            "OutputResults": 1
+        },
+        {
+            "Name": "tls-textlines",
+            "OutputResults": 1
+        },
+        {
+            "Name": "tls-uppercase",
+            "CharacterModelName": "UppercaseCharRecognition",
+            "OutputResults": 1
+        }
+    ],
+    "LabelRecognizerTaskSettingOptions": [
+        {
+            "Name": "task-recognize-letter",
+            "TextLineSpecificationNameArray": [
+                "tls-letter"
+            ],
+            "SectionArray": [
+                {
+                    "Section": "ST_REGION_PREDETECTION",
+                    "ImageParameterName": "ip-recognize-letter",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_PREDETECT_REGIONS"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_LOCALIZATION",
+                    "ImageParameterName": "ip-recognize-letter",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_LOCALIZE_TEXT_LINES"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_RECOGNITION",
+                    "ImageParameterName": "ip-recognize-letter",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_RECOGNIZE_RAW_TEXT_LINES"
+                        },
+                        {
+                            "Stage": "SST_ASSEMBLE_TEXT_LINES"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "Name": "task-recognize-number",
+            "TextLineSpecificationNameArray": [
+                "tls-number"
+            ],
+            "SectionArray": [
+                {
+                    "Section": "ST_REGION_PREDETECTION",
+                    "ImageParameterName": "ip-recognize-textline-number",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_PREDETECT_REGIONS"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_LOCALIZATION",
+                    "ImageParameterName": "ip-recognize-textline-number",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_LOCALIZE_TEXT_LINES"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_RECOGNITION",
+                    "ImageParameterName": "ip-recognize-textline-number",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_RECOGNIZE_RAW_TEXT_LINES"
+                        },
+                        {
+                            "Stage": "SST_ASSEMBLE_TEXT_LINES"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "Name": "task-recognize-number-letter",
+            "TextLineSpecificationNameArray": [
+                "tls-number-letter"
+            ],
+            "SectionArray": [
+                {
+                    "Section": "ST_REGION_PREDETECTION",
+                    "ImageParameterName": "ip-recognize-number-letter",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_PREDETECT_REGIONS"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_LOCALIZATION",
+                    "ImageParameterName": "ip-recognize-number-letter",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_LOCALIZE_TEXT_LINES"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_RECOGNITION",
+                    "ImageParameterName": "ip-recognize-number-letter",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_RECOGNIZE_RAW_TEXT_LINES"
+                        },
+                        {
+                            "Stage": "SST_ASSEMBLE_TEXT_LINES"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "Name": "task-recognize-number-uppercase",
+            "TextLineSpecificationNameArray": [
+                "tls-number-uppercase"
+            ],
+            "SectionArray": [
+                {
+                    "Section": "ST_REGION_PREDETECTION",
+                    "ImageParameterName": "ip-recognize-number-uppercase",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_PREDETECT_REGIONS"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_LOCALIZATION",
+                    "ImageParameterName": "ip-recognize-number-uppercase",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_LOCALIZE_TEXT_LINES"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_RECOGNITION",
+                    "ImageParameterName": "ip-recognize-number-uppercase",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_RECOGNIZE_RAW_TEXT_LINES"
+                        },
+                        {
+                            "Stage": "SST_ASSEMBLE_TEXT_LINES"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "Name": "task-recognize-textlines",
+            "TextLineSpecificationNameArray": [
+                "tls-textlines"
+            ],
+            "SectionArray": [
+                {
+                    "Section": "ST_REGION_PREDETECTION",
+                    "ImageParameterName": "ip-recognize-textlines",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_PREDETECT_REGIONS"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_LOCALIZATION",
+                    "ImageParameterName": "ip-recognize-textlines",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_LOCALIZE_TEXT_LINES"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_RECOGNITION",
+                    "ImageParameterName": "ip-recognize-textlines",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_RECOGNIZE_RAW_TEXT_LINES"
+                        },
+                        {
+                            "Stage": "SST_ASSEMBLE_TEXT_LINES"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "Name": "task-recognize-uppercase",
+            "TextLineSpecificationNameArray": [
+                "tls-uppercase"
+            ],
+            "SectionArray": [
+                {
+                    "Section": "ST_REGION_PREDETECTION",
+                    "ImageParameterName": "ip-recognize-uppercase",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_PREDETECT_REGIONS"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_LOCALIZATION",
+                    "ImageParameterName": "ip-recognize-uppercase",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_LOCALIZE_TEXT_LINES"
+                        }
+                    ]
+                },
+                {
+                    "Section": "ST_TEXT_LINE_RECOGNITION",
+                    "ImageParameterName": "ip-recognize-uppercase",
+                    "StageArray": [
+                        {
+                            "Stage": "SST_RECOGNIZE_RAW_TEXT_LINES"
+                        },
+                        {
+                            "Stage": "SST_ASSEMBLE_TEXT_LINES"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "ImageParameterOptions": [
+        {
+            "Name": "ip-recognize-letter",
+            "ApplicableStages": [
+                {
+                    "Stage": "SST_DETECT_TEXT_ZONES",
+                    "TextDetectionMode": {
+                        "Mode": "TTDM_LINE",
+                        "Direction": "HORIZONTAL",
+                        "CharHeightRange": [
+                            20,
+                            1000,
+                            1
+                        ],
+                        "Sensitivity": 7
+                    }
+                }
+            ]
+        },
+        {
+            "Name": "ip-recognize-textline-number",
+            "ApplicableStages": [
+                {
+                    "Stage": "SST_DETECT_TEXT_ZONES",
+                    "TextDetectionMode": {
+                        "Mode": "TTDM_LINE",
+                        "Direction": "HORIZONTAL",
+                        "CharHeightRange": [
+                            20,
+                            1000,
+                            1
+                        ],
+                        "Sensitivity": 7
+                    }
+                }
+            ]
+        },
+        {
+            "Name": "ip-recognize-number-letter",
+            "ApplicableStages": [
+                {
+                    "Stage": "SST_DETECT_TEXT_ZONES",
+                    "TextDetectionMode": {
+                        "Mode": "TTDM_LINE",
+                        "Direction": "HORIZONTAL",
+                        "CharHeightRange": [
+                            20,
+                            1000,
+                            1
+                        ],
+                        "Sensitivity": 7
+                    }
+                }
+            ]
+        },
+        {
+            "Name": "ip-recognize-number-uppercase",
+            "ApplicableStages": [
+                {
+                    "Stage": "SST_DETECT_TEXT_ZONES",
+                    "TextDetectionMode": {
+                        "Mode": "TTDM_LINE",
+                        "Direction": "HORIZONTAL",
+                        "CharHeightRange": [
+                            20,
+                            1000,
+                            1
+                        ],
+                        "Sensitivity": 7
+                    }
+                }
+            ]
+        },
+        {
+            "Name": "ip-recognize-textlines",
+            "ApplicableStages": [
+                {
+                    "Stage": "SST_DETECT_TEXT_ZONES",
+                    "TextDetectionMode": {
+                        "Mode": "TTDM_LINE",
+                        "Direction": "HORIZONTAL",
+                        "CharHeightRange": [
+                            20,
+                            1000,
+                            1
+                        ],
+                        "Sensitivity": 7
+                    }
+                }
+            ]
+        },
+        {
+            "Name": "ip-recognize-uppercase",
+            "ApplicableStages": [
+                {
+                    "Stage": "SST_DETECT_TEXT_ZONES",
+                    "TextDetectionMode": {
+                        "Mode": "TTDM_LINE",
+                        "Direction": "HORIZONTAL",
+                        "CharHeightRange": [
+                            20,
+                            1000,
+                            1
+                        ],
+                        "Sensitivity": 7
+                    }
+                }
+            ]
+        }
+    ],
+    "CaptureVisionModelOptions": [
+        {
+            "Name": "LetterCharRecognition",
+            "MaxModelInstances": 4
+        },
+        {
+            "Name": "NumberCharRecognition",
+            "MaxModelInstances": 4
+        },
+        {
+            "Name": "NumberLetterCharRecognition",
+            "MaxModelInstances": 4
+        },
+        {
+            "Name": "NumberUppercaseCharRecognition",
+            "MaxModelInstances": 4
+        },
+        {
+            "Name": "UppercaseCharRecognition",
+            "MaxModelInstances": 4
+        }
+    ]
+}

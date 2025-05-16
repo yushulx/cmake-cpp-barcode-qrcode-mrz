@@ -8,7 +8,7 @@ MESSAGE(STATUS "Build with OpenCV: ${ENABLE_OPENCV}")
 if (CMAKE_HOST_WIN32)
     set(WINDOWS 1)
 elseif(CMAKE_HOST_APPLE)
-    set(MACOS 1)
+    set(mac 1)
 elseif(CMAKE_HOST_UNIX)
     set(LINUX 1)
 endif()
@@ -48,19 +48,19 @@ endif()
 MESSAGE( STATUS "CPU architecture ${CMAKE_SYSTEM_PROCESSOR}" )
 if(WINDOWS)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/win/bin/") 
+        link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/win/") 
     else()
-        link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/win/lib/") 
+        link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/win/") 
     endif()
 elseif(LINUX)
     if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
-        MESSAGE( STATUS "Link directory: ${PROJECT_SOURCE_DIR}/../sdk/platforms/linux/" )
-        link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/linux/")
+        MESSAGE( STATUS "Link directory: ${PROJECT_SOURCE_DIR}/../../../dcv/lib/linux/x64" )
+        link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/linux/x64")
     endif()
-elseif(MACOS)
-    link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/macos/")
+elseif(mac)
+    link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/mac/")
 endif()
-include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/../sdk/include/")
+include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/../../../dcv/include/")
 
 # Add the executable
 if (ENABLE_OPENCV)
@@ -87,60 +87,45 @@ endif()
 if(WINDOWS)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${PROJECT_SOURCE_DIR}/../sdk/platforms/win/bin/"      
+    "${PROJECT_SOURCE_DIR}/../../../dcv/lib/win/"      
     $<TARGET_FILE_DIR:main>)
 elseif(LINUX)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${PROJECT_SOURCE_DIR}/../sdk/platforms/linux/"      
+    "${PROJECT_SOURCE_DIR}/../../../dcv/lib/linux/x64"      
     $<TARGET_FILE_DIR:main>)
-elseif(MACOS)
+elseif(mac)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${PROJECT_SOURCE_DIR}/../sdk/platforms/macos/"      
+    "${PROJECT_SOURCE_DIR}/../../../dcv/lib/mac/"      
     $<TARGET_FILE_DIR:main>)
 endif()
 
-# add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-# COMMAND ${CMAKE_COMMAND} -E copy
-# "${PROJECT_SOURCE_DIR}/../sdk/Templates/DBR-PresetTemplates.json"
-# $<TARGET_FILE_DIR:main>/DBR-PresetTemplates.json)
-
-# add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-# COMMAND ${CMAKE_COMMAND} -E copy
-# "${PROJECT_SOURCE_DIR}/../sdk/Templates/DLR-PresetTemplates.json"
-# $<TARGET_FILE_DIR:main>/DLR-PresetTemplates.json)
-
-# add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-# COMMAND ${CMAKE_COMMAND} -E copy
-# "${PROJECT_SOURCE_DIR}/../sdk/Templates/MRZScanner.json"
-# $<TARGET_FILE_DIR:main>/MRZScanner.json)
-
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy
-"${PROJECT_SOURCE_DIR}/../sdk/ConfusableChars.data"
+"${PROJECT_SOURCE_DIR}/../../../dcv/resource/ConfusableChars.data"
 $<TARGET_FILE_DIR:main>/ConfusableChars.data)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy
-"${PROJECT_SOURCE_DIR}/../sdk/OverlappingChars.data"
+"${PROJECT_SOURCE_DIR}/../../../dcv/resource/OverlappingChars.data"
 $<TARGET_FILE_DIR:main>/OverlappingChars.data)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/Models
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-"${PROJECT_SOURCE_DIR}/../sdk/Models"
+"${PROJECT_SOURCE_DIR}/../../../dcv/resource/Models"
 $<TARGET_FILE_DIR:main>/Models)
 
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/ParserResources
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-"${PROJECT_SOURCE_DIR}/../sdk/ParserResources"
+"${PROJECT_SOURCE_DIR}/../../../dcv/resource/ParserResources"
 $<TARGET_FILE_DIR:main>/ParserResources)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/Templates
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-"${PROJECT_SOURCE_DIR}/../sdk/Templates"
+"${PROJECT_SOURCE_DIR}/../../../dcv/resource/Templates"
 $<TARGET_FILE_DIR:main>/Templates)

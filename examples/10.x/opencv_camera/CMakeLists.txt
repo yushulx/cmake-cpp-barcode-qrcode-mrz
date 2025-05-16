@@ -44,17 +44,17 @@ endif()
 MESSAGE( STATUS "CPU architecture ${CMAKE_SYSTEM_PROCESSOR}" )
 if(WINDOWS)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/win/bin/") 
+        link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/win/") 
     else()
-        link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/win/lib/") 
+        link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/win/") 
     endif()
 elseif(LINUX)
     if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
-        MESSAGE( STATUS "Link directory: ${PROJECT_SOURCE_DIR}/../sdk/platforms/linux/" )
-        link_directories("${PROJECT_SOURCE_DIR}/../sdk/platforms/linux/")
+        MESSAGE( STATUS "Link directory: ${PROJECT_SOURCE_DIR}/../../../dcv/lib/linux/x86" )
+        link_directories("${PROJECT_SOURCE_DIR}/../../../dcv/lib/linux/x86")
     endif()
 endif()
-include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/../sdk/include/")
+include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/../../../dcv/include/")
 
 # Add the executable
 add_executable(${PROJECT_NAME} main.cxx)
@@ -69,29 +69,29 @@ endif()
 if(WINDOWS)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${PROJECT_SOURCE_DIR}/../sdk/platforms/win/bin/"      
+    "${PROJECT_SOURCE_DIR}/../../../dcv/lib/win/"      
     $<TARGET_FILE_DIR:main>)
 endif()
 
 # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 # COMMAND ${CMAKE_COMMAND} -E copy
-# "${PROJECT_SOURCE_DIR}/../sdk/Templates/DBR-PresetTemplates.json"
+# "${PROJECT_SOURCE_DIR}/../../../dcv/Templates/DBR-PresetTemplates.json"
 # $<TARGET_FILE_DIR:main>/DBR-PresetTemplates.json)
 
 # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 # COMMAND ${CMAKE_COMMAND} -E copy
-# "${PROJECT_SOURCE_DIR}/../sdk/Templates/DLR-PresetTemplates.json"
+# "${PROJECT_SOURCE_DIR}/../../../dcv/Templates/DLR-PresetTemplates.json"
 # $<TARGET_FILE_DIR:main>/DLR-PresetTemplates.json)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/Models
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-"${PROJECT_SOURCE_DIR}/../sdk/Models"
+"${PROJECT_SOURCE_DIR}/../../../dcv/resource/Models"
 $<TARGET_FILE_DIR:main>/Models)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>/Templates
 COMMAND ${CMAKE_COMMAND} -E copy_directory
-"${PROJECT_SOURCE_DIR}/../sdk/Templates"
+"${PROJECT_SOURCE_DIR}/../../../dcv/resource/Templates"
 $<TARGET_FILE_DIR:main>/Templates)
 

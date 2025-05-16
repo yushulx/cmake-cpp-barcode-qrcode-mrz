@@ -113,8 +113,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)\..\sdk\platforms\win\bin\*.dll" "$(OutDir)"
-xcopy /Y "$(ProjectDir)\..\sdk\Templates\DBR-PresetTemplates.json" "$(OutDir)"</Command>
+      <Command>xcopy /Y "$(ProjectDir)\..\..\..\dcv\lib\win\*.dll" "$(OutDir)"
+xcopy /Y "$(ProjectDir)\..\..\..\dcv\resource\Templates\DBR-PresetTemplates.json" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
