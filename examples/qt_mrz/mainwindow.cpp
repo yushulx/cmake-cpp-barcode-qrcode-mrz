@@ -136,7 +136,7 @@ void MainWindow::showImage(const QImage &image, QString fileName)
         DLR_ResultArray *handler = NULL;
         DLR_GetAllResults(recognizer, &handler);
 
-        if (handler == NULL or handler->resultsCount == 0)
+        if (handler == NULL || handler->resultsCount == 0)
         {
             QString message = "No passport info found. Elapsed time: " + QString::number(start.msecsTo(end)) + "ms\n";
             ui->textEdit_results->setText(message);
