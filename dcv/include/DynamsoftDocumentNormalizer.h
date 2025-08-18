@@ -15,7 +15,7 @@
 
 #include "DynamsoftCore.h"
 
-#define DDN_VERSION                  "3.0.30.4532"
+#define DDN_VERSION                  "3.0.60.5318"
 
 /**Enums section*/
 
@@ -560,6 +560,8 @@ namespace dynamsoft
 				 * @return Returns 0 if successful, otherwise returns a negative value.
 				 */
 				virtual int SetDeskewedImage(const CDeskewedImageElement* element, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
+
+				virtual int RemoveDeskewedImage() = 0;
 			};
 
 			class DDN_API CEnhancedImageUnit : public CIntermediateResultUnit
@@ -587,6 +589,8 @@ namespace dynamsoft
 				 * @return Returns 0 if successful, otherwise returns a negative value.
 				 */
 				virtual int SetEnhancedImage(const CEnhancedImageElement* element) = 0;
+
+				virtual int RemoveEnhancedImage() = 0;
 			};
 		}
 
@@ -635,6 +639,7 @@ namespace dynamsoft
 			 *
 			 */
 			virtual void SetCrossVerificationStatus(CrossVerificationStatus status) = 0;
+
 		};
 
 		/**
@@ -691,6 +696,7 @@ namespace dynamsoft
 			 *                     coordinates from the original image to the local image.
 			 */
 			virtual void GetOriginalToLocalMatrix(double matrix[9]) const = 0;
+
 		};
 
 		/**
@@ -723,6 +729,7 @@ namespace dynamsoft
 			 *                     coordinates from the original image to the local image.
 			 */
 			virtual void GetOriginalToLocalMatrix(double matrix[9]) const = 0;
+
 		};
 
 		/**

@@ -18,7 +18,7 @@ typedef void* HANDLE;
 
 #include "DynamsoftCore.h"
 
-#define DBR_VERSION "11.0.30.4532"
+#define DBR_VERSION "11.0.60.5318"
 
 /**Enumeration section*/
 
@@ -38,7 +38,7 @@ enum BarcodeFormat : unsigned long long
 	/**Use the default barcode format settings*/
 	BF_DEFAULT = 0xFE3BFFFF,
 
-	/**Combined value of BF_CODABAR, BF_CODE_128, BF_CODE_39, BF_CODE_39_Extended, BF_CODE_93, BF_EAN_13, BF_EAN_8, INDUSTRIAL_25, BF_ITF, BF_UPC_A, BF_UPC_E, BF_MSI_CODE;  */
+	/**Combined value of BF_CODABAR, BF_CODE_128, BF_CODE_39, BF_CODE_39_Extended, BF_CODE_93, BF_EAN_13, BF_EAN_8, INDUSTRIAL_25, BF_ITF, BF_UPC_A, BF_UPC_E, BF_MSI_CODE, BF_CODE_11;  */
 	BF_ONED = 0x003007FF,
 
 	/**Combined value of BF_GS1_DATABAR_OMNIDIRECTIONAL, BF_GS1_DATABAR_TRUNCATED, BF_GS1_DATABAR_STACKED, BF_GS1_DATABAR_STACKED_OMNIDIRECTIONAL, BF_GS1_DATABAR_EXPANDED, BF_GS1_DATABAR_EXPANDED_STACKED, BF_GS1_DATABAR_LIMITED*/
@@ -156,7 +156,7 @@ enum BarcodeFormat : unsigned long long
 	 */
 	BF_TELEPEN_NUMERIC = 0x4000000000,
 
-	/**Combined value of BF2_USPSINTELLIGENTMAIL, BF2_POSTNET, BF2_PLANET, BF2_AUSTRALIANPOST, BF2_RM4SCC.*/
+	/**Combined value of BF_USPSINTELLIGENTMAIL, BF_POSTNET, BF_PLANET, BF_AUSTRALIANPOST, BF_RM4SCC, BF_KIX.*/
 	BF_POSTALCODE = 0x3F0000000000000,
 
 	/**Nonstandard barcode */
@@ -1345,6 +1345,9 @@ namespace dynamsoft
 				 * @return Returns 0 if successful, otherwise returns a negative value.
 				 */
 				virtual int SetDecodedBarcode(const CDecodedBarcodeElement* element, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
+
+
+				virtual int RemoveDecodedBarcode(int index) = 0;
 			};
 		}
 
@@ -1465,7 +1468,6 @@ namespace dynamsoft
 			 *
 			 */
 			virtual int SetLocation(const CQuadrilateral& location) = 0;
-
 		};
 
 		/**

@@ -11,7 +11,7 @@
 #endif
 #include "DynamsoftCore.h"
 
-#define DCP_VERSION "3.0.30.4532"
+#define DCP_VERSION "3.0.60.5318"
 /**
  * @enum MappingStatus 
  *
@@ -58,6 +58,23 @@ namespace dynamsoft
 	{
 #pragma pack(push)
 #pragma pack(4)
+		class CCodeType
+		{
+		public:
+			DCP_API static const char*  CT_MRTD_TD1_ID;					//"MRTD_TD1_ID"
+			DCP_API static const char*  CT_MRTD_TD2_ID;					//"MRTD_TD2_ID"
+			DCP_API static const char*  CT_MRTD_TD2_VISA;				//"MRTD_TD2_VISA"
+			DCP_API static const char*  CT_MRTD_TD3_PASSPORT;			//"MRTD_TD3_PASSPORT"
+			DCP_API static const char*  CT_MRTD_TD3_VISA;				//"MRTD_TD3_VISA"
+			DCP_API static const char*  CT_MRTD_TD2_FRENCH_ID;			//"MRTD_TD2_FRENCH_ID"
+			DCP_API static const char*  CT_AAMVA_DL_ID;					//"AAMVA_DL_ID"
+			DCP_API static const char*  CT_AAMVA_DL_ID_WITH_MAG_STRIPE;	//"AAMVA_DL_ID_WITH_MAG_STRIPE"
+			DCP_API static const char*  CT_SOUTH_AFRICA_DL;				//"SOUTH_AFRICA_DL"
+			DCP_API static const char*  CT_AADHAAR;						//"AADHAAR"
+			DCP_API static const char*  CT_VIN;							//"VIN"
+			DCP_API static const char*  CT_GS1_AI;						//"GS1_AI"
+		};
+		
 		/**
 		 * The `CParsedResultItem` class represents a item parsed by code parser sdk. It is derived from `CCapturedResultItem`.
 		 *
@@ -127,6 +144,25 @@ namespace dynamsoft
 			*
 			*/
 			virtual const char* GetFieldRawValue(const char* fieldName) const = 0;
+
+			/**
+			* Gets the total number of parsed fields.
+			*
+			* @return Returns an integer representing the count of parsed fields.
+			*
+			*/
+			virtual int GetFieldCount() const = 0;
+
+			/**
+			* Gets the name of a specific parsed field by its index.
+			*
+			* @param [in] index The index of the parsed field.
+			*
+			* @return Returns a string representing the specified field name. If the field is nested, the name includes all parent fields, separated by a dot (.).
+			* The format follows this pattern: <root_field>[.<child_field1>[.<child_field2>...]]
+			*
+			*/
+			virtual const char* GetFieldName(int index) const = 0;
 		};
 
 		/**

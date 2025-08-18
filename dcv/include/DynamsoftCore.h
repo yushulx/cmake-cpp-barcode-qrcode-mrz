@@ -1,5 +1,5 @@
 #pragma once
-#define DYNAMSOFT_CORE_VERSION "4.0.30.4532"
+#define DYNAMSOFT_CORE_VERSION "4.0.60.5318"
 
 /**Enumeration section*/
 
@@ -201,6 +201,9 @@ typedef enum ErrorCode {
 	/**The rectangle is invalid.*/
 	EC_RECT_INVALID = -10080,
 
+	/*The template version is incompatible. Please use a compatible template.*/
+	EC_TEMPLATE_VERSION_INCOMPATIBLE = -10081,
+
 	/** -20000~-29999: DLS license error code. */
 	/**No license.*/
 	EC_NO_LICENSE = -20000,
@@ -237,7 +240,13 @@ typedef enum ErrorCode {
 
 	/**Online license validation failed due to network issues.Using cached license information for validation.*/
 	EC_LICENSE_CACHE_USED = -20012,
-
+	
+	/*License authentication failed: quota exceeded.*/
+	EC_LICENSE_AUTH_QUOTA_EXCEEDED = -20013,
+	
+	/**License restriction: the number of results has exceeded the allowed limit.*/
+	EC_LICENSE_RESULTS_LIMIT_EXCEEDED = -20014,
+	
 	/**Failed to reach License Server.*/
 	EC_FAILED_TO_REACH_DLS = -20200,
 
@@ -313,7 +322,7 @@ typedef enum ErrorCode {
 
 
 	/**-50000~-59999: DDN error code*/
-	/*The quardrilateral is invalid*/
+	/*The quadrilateral is invalid*/
 	EC_QUADRILATERAL_INVALID = -50057,
 
 	/**The document normalizer license is not found.*/
@@ -1995,6 +2004,7 @@ namespace dynamsoft
 			 * @return Returns a pointer to a copy of the captured result item.
 			 */
 			virtual CCapturedResultItem* Clone() const = 0;
+
 		};
 
 		/**
