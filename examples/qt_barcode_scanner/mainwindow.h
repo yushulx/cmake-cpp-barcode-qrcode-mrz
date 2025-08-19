@@ -110,6 +110,8 @@ private:
 
     // Current image
     QPixmap currentPixmap;
+    QPixmap currentCameraFrame;                // Store current camera frame for overlay
+    QList<BarcodeResult> currentCameraResults; // Store current camera detection results
     QString licenseKey;
     QString templateContent;
     QString lastImageDirectory; // Remember last used directory for image loading

@@ -58,20 +58,67 @@ MainWindow::MainWindow(QWidget *parent)
     connect(openCVCamera, QOverload<const QPixmap &>::of(&OpenCVCamera::frameReady), this, [this](const QPixmap &pixmap)
             {
         if (useOpenCVCamera && cameraLabel && cameraLabel->isVisible() && !cameraUpdatesPaused) {
+            // Store current camera frame for overlay
+            currentCameraFrame = pixmap;
+            
             // Get the current label size
             QSize labelSize = cameraLabel->size();
             
             // Only scale if we have a valid size
             if (labelSize.width() > 10 && labelSize.height() > 10) {
-                // Scale the pixmap to fit within the label while maintaining aspect ratio
-                QPixmap scaledPixmap = pixmap.scaled(
-                    labelSize, 
-                    Qt::KeepAspectRatio, 
-                    Qt::SmoothTransformation
-                );
-                
-                // Set the scaled pixmap
-                cameraLabel->setPixmap(scaledPixmap);
+                // Check if we have current barcode results to overlay
+                if (!currentCameraResults.isEmpty()) {
+                    // Create overlay on the current frame
+                    QPixmap overlayPixmap = pixmap;
+                    QPainter painter(&overlayPixmap);
+                    painter.setRenderHint(QPainter::Antialiasing);
+
+                    // Draw barcode detection boxes
+                    for (const auto &result : currentCameraResults) {
+                        if (!result.points.isEmpty() && result.points.size() >= 4) {
+                            QPen pen(Qt::green, 3);
+                            painter.setPen(pen);
+
+                            // Draw polygon connecting all points
+                            QPolygonF polygon;
+                            for (const auto &point : result.points) {
+                                polygon << point;
+                            }
+                            painter.drawPolygon(polygon);
+
+                            // Draw format text
+                            if (!result.format.isEmpty()) {
+                                painter.setPen(QPen(Qt::yellow, 2));
+                                QFont font = painter.font();
+                                font.setPointSize(12);
+                                font.setBold(true);
+                                painter.setFont(font);
+                                
+                                // Position text near first point
+                                QPointF textPos = result.points.first();
+                                textPos.setY(textPos.y() - 10); // Above the barcode
+                                painter.drawText(textPos, result.format);
+                            }
+                        }
+                    }
+                    painter.end();
+
+                    // Scale the pixmap with overlay to fit within the label
+                    QPixmap scaledPixmap = overlayPixmap.scaled(
+                        labelSize, 
+                        Qt::KeepAspectRatio, 
+                        Qt::SmoothTransformation
+                    );
+                    cameraLabel->setPixmap(scaledPixmap);
+                } else {
+                    // No barcode results, just scale the original pixmap
+                    QPixmap scaledPixmap = pixmap.scaled(
+                        labelSize, 
+                        Qt::KeepAspectRatio, 
+                        Qt::SmoothTransformation
+                    );
+                    cameraLabel->setPixmap(scaledPixmap);
+                }
             }
             
             // Process frame for barcode detection (continue even when paused for detection)
@@ -698,6 +745,10 @@ void MainWindow::testCameraWithBackendForcing()
 
 void MainWindow::stopCamera()
 {
+    // Clear camera overlay data
+    currentCameraResults.clear();
+    currentCameraFrame = QPixmap();
+
 #ifdef ENABLE_OPENCV_CAMERA
     // Stop OpenCV camera if it's being used
     if (useOpenCVCamera && openCVCamera)
@@ -808,10 +859,19 @@ void MainWindow::onBarcodeResults(const QList<BarcodeResult> &results)
     {
         updateImageDisplay(currentPixmap, results);
     }
+    // If we're in camera mode, update camera display with overlay
+    else if (ui->tabWidget->currentIndex() == 1)
+    {
+        currentCameraResults = results;
+    }
 }
 
 void MainWindow::onImageTabSelected()
 {
+    // Clear camera results when switching away from camera
+    currentCameraResults.clear();
+    currentCameraFrame = QPixmap();
+
     // Stop camera if running
     if (camera && camera->isActive())
     {
