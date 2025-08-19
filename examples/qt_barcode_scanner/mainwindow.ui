@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1200</width>
+    <height>800</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Qt Barcode Scanner</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QTabWidget" name="tabWidget">
+       <property name="minimumSize">
+        <size>
+         <width>600</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="QWidget" name="imageTab">
+        <attribute name="title">
+         <string>Image</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="imageLayout">
+         <item>
+          <widget class="QScrollArea" name="imageScrollArea">
+           <property name="widgetResizable">
+            <bool>true</bool>
+           </property>
+           <widget class="QWidget" name="scrollAreaWidgetContents">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>589</width>
+              <height>713</height>
+             </rect>
+            </property>
+            <layout class="QVBoxLayout" name="scrollLayout">
+             <item>
+              <widget class="QLabel" name="imageLabel">
+               <property name="minimumSize">
+                <size>
+                 <width>580</width>
+                 <height>400</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { 
+    border: 2px dashed #aaa; 
+    background-color: #f0f0f0; 
+    color: #666;
+}</string>
+               </property>
+               <property name="text">
+                <string>Drag and drop an image here or use 'Load Image' button</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="cameraTab">
+        <attribute name="title">
+         <string>Camera</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="cameraLayout">
+         <item>
+          <widget class="QWidget" name="videoWidget" native="true">
+           <property name="minimumSize">
+            <size>
+             <width>580</width>
+             <height>400</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QWidget { 
+    background-color: #000; 
+    border: 1px solid #333;
+}</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="rightPanel" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>400</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>500</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <layout class="QVBoxLayout" name="rightLayout">
+        <item>
+         <widget class="QGroupBox" name="controlsGroupBox">
+          <property name="title">
+           <string>Controls</string>
+          </property>
+          <layout class="QVBoxLayout" name="controlsLayout">
+           <item>
+            <widget class="QPushButton" name="loadImageButton">
+             <property name="text">
+              <string>Load Image</string>
+             </property>
+             <property name="icon">
+              <iconset theme="document-open">
+               <normaloff>.</normaloff>.</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="startCameraButton">
+             <property name="text">
+              <string>Start Camera</string>
+             </property>
+             <property name="icon">
+              <iconset theme="camera-video">
+               <normaloff>.</normaloff>.</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="stopCameraButton">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Stop Camera</string>
+             </property>
+             <property name="icon">
+              <iconset theme="media-playback-stop">
+               <normaloff>.</normaloff>.</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="resultsGroupBox">
+          <property name="title">
+           <string>Barcode Results</string>
+          </property>
+          <layout class="QVBoxLayout" name="resultsLayout">
+           <item>
+            <widget class="QTextEdit" name="resultsTextEdit">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>300</height>
+              </size>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+             <property name="placeholderText">
+              <string>Barcode detection results will appear here...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="clearResultsButton">
+             <property name="text">
+              <string>Clear Results</string>
+             </property>
+             <property name="icon">
+              <iconset theme="edit-clear">
+               <normaloff>.</normaloff>.</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1200</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="actionOpen"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>&amp;Settings</string>
+    </property>
+    <addaction name="actionSetLicense"/>
+    <addaction name="actionLoadTemplate"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>&amp;Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuSettings"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionOpen">
+   <property name="text">
+    <string>&amp;Open Image</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>E&amp;xit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionSetLicense">
+   <property name="text">
+    <string>Set &amp;License Key</string>
+   </property>
+  </action>
+  <action name="actionLoadTemplate">
+   <property name="text">
+    <string>Load &amp;Template</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>&amp;About</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,123 @@
+# Build directories
+build/
+Build/
+BUILD/
+debug/
+Debug/
+release/
+Release/
+RelWithDebInfo/
+MinSizeRel/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Qt generated files
+*.pro.user
+*.pro.user.*
+ui_*.h
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Visual Studio files
+*.vcxproj.user
+*.vcxproj.filters
+*.sln.docstates
+*.suo
+*.user
+*.aps
+*.pch
+*.vspscc
+*_i.c
+*_p.c
+*.ncb
+*.tlb
+*.tlh
+*.bak
+*.cache
+*.ilk
+*.log
+[Dd]ebug*/
+[Rr]elease*/
+*.sbr
+*.sdf
+*.opensdf
+*.opendb
+*.ipch
+
+# Xcode files
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+
+# Qt Creator
+*.autosave
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Test and debug files
+*test*
+*debug*
+*Test*
+*Debug*
+CRASH_*.md
+CAMERA_*.md
+BARCODE_*.md
+JPEG_*.md
+IMAGE_*.md
+*-simple.*
+*-minimal.*
+diagnose-*.bat
+
+# IDE files
+.vscode/
+.idea/
+*.code-workspace
