@@ -2,6 +2,8 @@
 
 A complete cross-platform GUI barcode scanner application built with Qt 6 and Dynamsoft Capture Vision SDK.
 
+https://github.com/user-attachments/assets/71e52a82-9828-4f8c-9b30-f3142e6722c0
+
 ## Prerequisites
 
 ### Required Dependencies
