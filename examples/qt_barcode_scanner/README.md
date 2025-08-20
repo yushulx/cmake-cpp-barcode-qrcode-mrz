@@ -119,6 +119,8 @@ After building, the executable will be in the build directory:
 ./QtBarcodeScanner
 ```
 
+![Qt barcode scanner](https://www.dynamsoft.com/codepool/img/2025/08/qt-barcode-scanner-windows-gui-app.png)
+
 ## Configuration
 
 ### License Key Setup
