@@ -325,6 +325,36 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     if (!this || !ui || cameraUpdatesPaused)
         return;
 
+    // Handle image resizing in image tab
+    if (ui->tabWidget->currentIndex() == 0 && !currentPixmap.isNull())
+    {
+        // Use a timer to defer the image update to avoid excessive updates during rapid resizing
+        static QTimer *imageResizeTimer = nullptr;
+        if (!imageResizeTimer)
+        {
+            imageResizeTimer = new QTimer(this);
+            imageResizeTimer->setSingleShot(true);
+            imageResizeTimer->setInterval(50); // 50ms delay for smooth resizing
+            connect(imageResizeTimer, &QTimer::timeout, this, [this]()
+                    {
+                // Re-scale the current image to fit the new label size
+                if (!currentPixmap.isNull() && ui->imageLabel)
+                {
+                    if (!currentImageResults.isEmpty())
+                    {
+                        // If we have barcode results, redraw with overlay
+                        updateImageDisplay(currentPixmap, currentImageResults);
+                    }
+                    else
+                    {
+                        // Just resize the image without overlay
+                        updateImageDisplay(currentPixmap);
+                    }
+                } });
+        }
+        imageResizeTimer->start();
+    }
+
 #ifdef ENABLE_OPENCV_CAMERA
     // Use member timer to defer camera update and avoid crashes
     if (resizeTimer && useOpenCVCamera && cameraLabel)
@@ -792,6 +822,16 @@ void MainWindow::stopCamera()
 void MainWindow::clearResults()
 {
     ui->resultsTextEdit->clear();
+
+    // Clear stored results
+    currentImageResults.clear();
+    currentCameraResults.clear();
+
+    // If we're in image mode and have an image loaded, redisplay without overlay
+    if (ui->tabWidget->currentIndex() == 0 && !currentPixmap.isNull())
+    {
+        updateImageDisplay(currentPixmap);
+    }
 }
 
 void MainWindow::about()
@@ -857,6 +897,7 @@ void MainWindow::onBarcodeResults(const QList<BarcodeResult> &results)
     // If we're in image mode, update the image with detection boxes
     if (ui->tabWidget->currentIndex() == 0 && !currentPixmap.isNull())
     {
+        currentImageResults = results; // Store results for resize handling
         updateImageDisplay(currentPixmap, results);
     }
     // If we're in camera mode, update camera display with overlay
@@ -878,7 +919,6 @@ void MainWindow::onImageTabSelected()
         stopCamera();
     }
 }
-
 void MainWindow::onCameraTabSelected()
 {
     // No specific action needed when switching to camera tab
@@ -984,6 +1024,7 @@ void MainWindow::loadImageFile(const QString &filePath)
     if (!pixmap.isNull())
     {
         currentPixmap = pixmap;
+        currentImageResults.clear(); // Clear previous results when loading new image
         ui->imageLabel->setPixmap(pixmap.scaled(ui->imageLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
         // Process the image for barcodes
