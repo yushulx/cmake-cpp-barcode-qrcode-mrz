@@ -1,5 +1,5 @@
 #include "barcodeworker.h"
-#include <QtCore/QDebug>
+#include <QLoggingCategory>
 
 BarcodeWorker::BarcodeWorker(QObject *parent)
     : QObject(parent), m_router(nullptr), m_licenseKey("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="), m_initialized(false)
@@ -180,7 +180,7 @@ void BarcodeWorker::setTemplate(const QString &templateContent)
             }
             else
             {
-                qDebug() << "Template loaded successfully";
+                // Template loaded successfully
             }
         }
         catch (const std::exception &e)

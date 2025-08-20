@@ -12,7 +12,7 @@ A complete cross-platform GUI barcode scanner application built with Qt 6 and Dy
    - Qt Multimedia
    - Qt MultimediaWidgets
 
-2. **OpenCV 4.5 or later** (for camera fallback and image loading)
+2. **OpenCV 4.5 or later** (for camera streaming and image loading)
 
 3. **Dynamsoft Capture Vision SDK** (included in project)
    - DynamsoftCaptureVisionRouter

@@ -18,20 +18,15 @@
 #include <QtGui/QResizeEvent>
 #include <QtGui/QPixmap>
 #include <QtGui/QPainter>
+#include <memory>
 
-#if ENABLE_CAMERA
+// Qt6 Camera includes
 #include <QtMultimedia/QCamera>
 #include <QtMultimedia/QMediaCaptureSession>
-#include <QtMultimedia/QMediaDevices>
 #include <QtMultimediaWidgets/QVideoWidget>
-#include <QtMultimedia/QVideoSink>
-#include "videosurface.h"
-#endif
 
-#ifdef ENABLE_OPENCV_CAMERA
 #include "opencvcamera.h"
 #include <QtWidgets/QLabel>
-#endif
 
 #include "barcodeworker.h"
 
@@ -69,8 +64,6 @@ private slots:
     void onImageTabSelected();
     void onCameraTabSelected();
     void onLicenseStatusChanged(const QString &status, bool isValid);
-    void testCameraDetection();
-    void testCameraWithBackendForcing();
 
 private:
     void setupConnections();
@@ -80,29 +73,20 @@ private:
     void updateLicenseStatus(const QString &status, bool isValid);
 
     // Camera helper methods
-    bool tryStartQt6Camera(const QList<QCameraDevice> &cameras);
-#ifdef ENABLE_OPENCV_CAMERA
     bool tryStartOpenCVCamera();
-#endif
 
     // UI
     Ui::MainWindow *ui;
 
     // Camera components
-#if ENABLE_CAMERA
     std::unique_ptr<QCamera> camera;
     std::unique_ptr<QMediaCaptureSession> captureSession;
     std::unique_ptr<QVideoWidget> videoWidget;
-    VideoSurface *videoSurface;
-#endif
-
-#ifdef ENABLE_OPENCV_CAMERA
     OpenCVCamera *openCVCamera;
     QLabel *cameraLabel; // For displaying OpenCV frames
     bool useOpenCVCamera;
     QTimer *resizeTimer;      // Timer for handling resize events safely
     bool cameraUpdatesPaused; // Flag to pause camera updates during window transitions
-#endif
 
     // Worker thread
     QThread *workerThread;

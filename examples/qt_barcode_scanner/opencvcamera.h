@@ -1,8 +1,6 @@
 #ifndef OPENCVCAMERA_H
 #define OPENCVCAMERA_H
 
-#ifdef ENABLE_OPENCV_CAMERA
-
 #include <QObject>
 #include <QTimer>
 #include <QImage>
@@ -47,7 +45,5 @@ private:
 
     QImage matToQImage(const cv::Mat &mat);
 };
-
-#endif // ENABLE_OPENCV_CAMERA
 
 #endif // OPENCVCAMERA_H

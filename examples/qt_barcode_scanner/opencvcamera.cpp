@@ -1,8 +1,5 @@
 #include "opencvcamera.h"
 
-#ifdef ENABLE_OPENCV_CAMERA
-
-#include <QDebug>
 #include <QApplication>
 
 OpenCVCamera::OpenCVCamera(QObject *parent)
@@ -73,7 +70,6 @@ bool OpenCVCamera::start(int cameraIndex)
     // Get actual resolution after setting
     int actualWidth = static_cast<int>(capture.get(cv::CAP_PROP_FRAME_WIDTH));
     int actualHeight = static_cast<int>(capture.get(cv::CAP_PROP_FRAME_HEIGHT));
-    qDebug() << "Camera resolution set to:" << actualWidth << "x" << actualHeight;
 
     // If we got a different resolution, try to optimize it
     if (actualWidth != 640 || actualHeight != 480)
@@ -84,7 +80,6 @@ bool OpenCVCamera::start(int cameraIndex)
 
         actualWidth = static_cast<int>(capture.get(cv::CAP_PROP_FRAME_WIDTH));
         actualHeight = static_cast<int>(capture.get(cv::CAP_PROP_FRAME_HEIGHT));
-        qDebug() << "Fallback camera resolution:" << actualWidth << "x" << actualHeight;
     }
 
     // Test if we can read a frame
@@ -100,7 +95,7 @@ bool OpenCVCamera::start(int cameraIndex)
     active = true;
     captureTimer->start();
 
-    qDebug() << "OpenCV camera started successfully:" << cameraIndex;
+    // OpenCV camera started successfully
     return true;
 }
 
@@ -112,7 +107,6 @@ void OpenCVCamera::stop()
         capture.release();
         active = false;
         currentCameraIndex = -1;
-        qDebug() << "OpenCV camera stopped";
     }
 }
 
@@ -176,5 +170,3 @@ QImage OpenCVCamera::matToQImage(const cv::Mat &mat)
         return QImage();
     }
 }
-
-#endif // ENABLE_OPENCV_CAMERA

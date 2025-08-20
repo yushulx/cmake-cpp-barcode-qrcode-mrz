@@ -25,8 +25,7 @@ elseif(UNIX)
     endif()
 endif()
 
-# Define camera support - hybrid approach (Qt6 + OpenCV)
-add_definitions(-DENABLE_CAMERA=1)
+# Define camera support - OpenCV only
 add_definitions(-DENABLE_OPENCV_CAMERA=1)
 
 # Include DCR headers
@@ -35,7 +34,7 @@ include_directories("${PROJECT_SOURCE_DIR}/../../dcv/include/")
 # Include OpenCV headers
 include_directories("${PROJECT_SOURCE_DIR}/../../cvcamera/include/")
 
-# Find Qt6 - minimal approach without tools
+# Find Qt6 - Core, Widgets, and Multimedia components
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Multimedia MultimediaWidgets)
 
 # Simple approach - define source files directly
@@ -43,7 +42,6 @@ set(SOURCES
     main.cpp
     mainwindow.cpp
     barcodeworker.cpp
-    videosurface.cpp
     opencvcamera.cpp
     mainwindow.ui
 )
@@ -51,14 +49,13 @@ set(SOURCES
 set(HEADERS
     mainwindow.h
     barcodeworker.h
-    videosurface.h
     opencvcamera.h
 )
 
 # Add executable
 add_executable(QtBarcodeScanner WIN32 ${SOURCES} ${HEADERS})
 
-# Link Qt libraries
+# Link Qt libraries - Core, Widgets, and Multimedia
 target_link_libraries(QtBarcodeScanner PRIVATE 
     Qt6::Core 
     Qt6::Widgets

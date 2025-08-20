@@ -9,18 +9,18 @@
 #include <QtCore/QLibraryInfo>
 #include <QtCore/QPluginLoader>
 #include <QtCore/QTimer>
-#include <QtCore/QDebug>
 
-#ifdef ENABLE_OPENCV_CAMERA
+// Qt6 Camera includes
+#include <QtMultimedia/QCamera>
+#include <QtMultimedia/QMediaCaptureSession>
+#include <QtMultimediaWidgets/QVideoWidget>
+#include <QtMultimedia/QMediaDevices>
+
 #include <opencv2/opencv.hpp>
-#endif
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), camera(nullptr), captureSession(nullptr), videoWidget(nullptr), videoSurface(nullptr), workerThread(nullptr), barcodeWorker(nullptr), licenseKey("LICENSE-KEY"), lastImageDirectory(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation))
-#ifdef ENABLE_OPENCV_CAMERA
-      ,
+    : QMainWindow(parent), ui(new Ui::MainWindow), camera(nullptr), captureSession(nullptr), videoWidget(nullptr), workerThread(nullptr), barcodeWorker(nullptr), licenseKey("LICENSE-KEY"), lastImageDirectory(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation)),
       openCVCamera(nullptr), cameraLabel(nullptr), useOpenCVCamera(false), resizeTimer(nullptr), cameraUpdatesPaused(false)
-#endif
 {
     ui->setupUi(this);
     setAcceptDrops(true);
@@ -41,7 +41,6 @@ MainWindow::MainWindow(QWidget *parent)
     videoWidget->setStyleSheet("QVideoWidget { background-color: #000; border: 1px solid #333; }");
     ui->cameraLayout->insertWidget(0, videoWidget.get());
 
-#ifdef ENABLE_OPENCV_CAMERA
     // Setup OpenCV camera label (initially hidden)
     cameraLabel = new QLabel();
     cameraLabel->setMinimumSize(580, 400);
@@ -61,16 +60,17 @@ MainWindow::MainWindow(QWidget *parent)
             // Store current camera frame for overlay
             currentCameraFrame = pixmap;
             
-            // Get the current label size
+            // Get the current label size (use the actual available space)
             QSize labelSize = cameraLabel->size();
             
-            // Only scale if we have a valid size
+            // Ensure we have a reasonable minimum size and the label has been properly sized
             if (labelSize.width() > 10 && labelSize.height() > 10) {
+                QPixmap displayPixmap = pixmap;
+                
                 // Check if we have current barcode results to overlay
                 if (!currentCameraResults.isEmpty()) {
                     // Create overlay on the current frame
-                    QPixmap overlayPixmap = pixmap;
-                    QPainter painter(&overlayPixmap);
+                    QPainter painter(&displayPixmap);
                     painter.setRenderHint(QPainter::Antialiasing);
 
                     // Draw barcode detection boxes
@@ -102,23 +102,15 @@ MainWindow::MainWindow(QWidget *parent)
                         }
                     }
                     painter.end();
-
-                    // Scale the pixmap with overlay to fit within the label
-                    QPixmap scaledPixmap = overlayPixmap.scaled(
-                        labelSize, 
-                        Qt::KeepAspectRatio, 
-                        Qt::SmoothTransformation
-                    );
-                    cameraLabel->setPixmap(scaledPixmap);
-                } else {
-                    // No barcode results, just scale the original pixmap
-                    QPixmap scaledPixmap = pixmap.scaled(
-                        labelSize, 
-                        Qt::KeepAspectRatio, 
-                        Qt::SmoothTransformation
-                    );
-                    cameraLabel->setPixmap(scaledPixmap);
                 }
+
+                // Scale the pixmap to fit within the label while maintaining aspect ratio
+                QPixmap scaledPixmap = displayPixmap.scaled(
+                    labelSize, 
+                    Qt::KeepAspectRatio, 
+                    Qt::SmoothTransformation
+                );
+                cameraLabel->setPixmap(scaledPixmap);
             }
             
             // Process frame for barcode detection (continue even when paused for detection)
@@ -175,11 +167,9 @@ MainWindow::MainWindow(QWidget *parent)
                     }
                 } catch (...) {
                     // Ignore any exceptions during resize - camera might be transitioning
-                    qDebug() << "Exception during camera resize update - camera transitioning";
                 }
             }
         }, Qt::QueuedConnection); });
-#endif
 
     // Setup worker thread
     workerThread = new QThread(this);
@@ -195,27 +185,19 @@ MainWindow::MainWindow(QWidget *parent)
     licenseStatusLabel->setMinimumWidth(200);
     ui->statusbar->addPermanentWidget(licenseStatusLabel);
 
-    // Debug: List supported image formats
+    // List supported image formats
     QList<QByteArray> supportedFormats = QImageReader::supportedImageFormats();
     QStringList formatList;
     for (const QByteArray &format : supportedFormats)
     {
         formatList << QString(format);
     }
-    qDebug() << "Supported image formats:" << formatList;
 
     workerThread->start();
 }
 
 MainWindow::~MainWindow()
 {
-    // Stop cameras first
-    if (camera)
-    {
-        camera->stop();
-    }
-
-#ifdef ENABLE_OPENCV_CAMERA
     if (openCVCamera)
     {
         openCVCamera->stop();
@@ -228,7 +210,6 @@ MainWindow::~MainWindow()
         resizeTimer->deleteLater();
         resizeTimer = nullptr;
     }
-#endif
 
     if (workerThread)
     {
@@ -303,16 +284,10 @@ void MainWindow::dropEvent(QDropEvent *event)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    if (camera)
-    {
-        camera->stop();
-    }
-#ifdef ENABLE_OPENCV_CAMERA
     if (openCVCamera)
     {
         openCVCamera->stop();
     }
-#endif
     event->accept();
 }
 
@@ -355,7 +330,6 @@ void MainWindow::resizeEvent(QResizeEvent *event)
         imageResizeTimer->start();
     }
 
-#ifdef ENABLE_OPENCV_CAMERA
     // Use member timer to defer camera update and avoid crashes
     if (resizeTimer && useOpenCVCamera && cameraLabel)
     {
@@ -379,18 +353,15 @@ void MainWindow::resizeEvent(QResizeEvent *event)
             catch (...)
             {
                 // Camera might be in transition, skip resize update
-                qDebug() << "Camera state check failed during resize - skipping update";
             }
         }
     }
-#endif
 }
 
 void MainWindow::changeEvent(QEvent *event)
 {
     QMainWindow::changeEvent(event);
 
-#ifdef ENABLE_OPENCV_CAMERA
     if (event->type() == QEvent::WindowStateChange)
     {
         // Temporarily pause camera updates during window state changes to prevent crashes
@@ -405,12 +376,10 @@ void MainWindow::changeEvent(QEvent *event)
         // Use a single-shot timer to resume camera updates after window state change completes
         QTimer::singleShot(500, this, [this]()
                            {
-            cameraUpdatesPaused = false;
-            qDebug() << "Camera updates resumed after window state change"; });
+            cameraUpdatesPaused = false; });
 
-        qDebug() << "Window state changed - camera updates paused temporarily";
+        // Window state changed - camera updates paused temporarily
     }
-#endif
 }
 
 void MainWindow::openImage()
@@ -447,46 +416,56 @@ void MainWindow::startCamera()
     {
         ui->resultsTextEdit->append("Initializing camera system...");
 
-        // First try Qt6 Multimedia
-        QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
-        ui->resultsTextEdit->append(QString("Qt6 detected cameras: %1").arg(cameras.size()));
-
-        if (!cameras.isEmpty())
+        // First try Qt6 Multimedia Camera
+        if (!camera)
         {
-            ui->resultsTextEdit->append("Attempting Qt6 Multimedia camera...");
-
-            // Try Qt6 camera first
-            if (tryStartQt6Camera(cameras))
+            QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
+            if (!cameras.isEmpty())
             {
-                return; // Success with Qt6
+                ui->resultsTextEdit->append(QString("Found %1 Qt camera(s)").arg(cameras.size()));
+                
+                // Create camera and capture session
+                camera = std::make_unique<QCamera>(cameras.first());
+                captureSession = std::make_unique<QMediaCaptureSession>();
+                
+                captureSession->setCamera(camera.get());
+                captureSession->setVideoOutput(videoWidget.get());
+                
+                // Start camera
+                camera->start();
+                
+                // Show Qt video widget, hide OpenCV label
+                videoWidget->show();
+                if (cameraLabel) cameraLabel->hide();
+                useOpenCVCamera = false;
+                
+                ui->startCameraButton->setEnabled(false);
+                ui->stopCameraButton->setEnabled(true);
+                
+                ui->resultsTextEdit->append("Qt6 camera started successfully!");
+                return;
             }
-
-            ui->resultsTextEdit->append("Qt6 camera failed, trying OpenCV fallback...");
-        }
-        else
-        {
-            ui->resultsTextEdit->append("No Qt6 cameras detected, checking OpenCV...");
+            else
+            {
+                ui->resultsTextEdit->append("No Qt cameras detected, trying OpenCV...");
+            }
         }
 
-#ifdef ENABLE_OPENCV_CAMERA
-        // Fallback to OpenCV camera
+        // Fall back to OpenCV camera
         if (tryStartOpenCVCamera())
         {
             return; // Success with OpenCV
         }
-#endif
 
-        // If we get here, both methods failed
-        // Run comprehensive camera diagnostics
-        testCameraDetection();
-
-        // Also try backend forcing
-        ui->resultsTextEdit->append("\n=== Trying Backend Forcing ===");
-        testCameraWithBackendForcing();
+        // If we get here, both Qt and OpenCV failed
+        // Run simple camera diagnostics
+        ui->resultsTextEdit->append("\n=== Camera Diagnostics ===");
+        ui->resultsTextEdit->append("No cameras found with Qt6 Multimedia or OpenCV.");
+        ui->resultsTextEdit->append("Check Windows Camera privacy settings if camera fails.");
+        ui->resultsTextEdit->append("Ensure camera is not in use by other applications.");
 
         QMessageBox::information(this, "Camera Info",
-                                 "No camera devices found with either Qt6 or OpenCV.\n\n"
-                                 "Detailed diagnostic information has been displayed in the results area.\n\n"
+                                 "No camera devices found.\n\n"
                                  "You can still use the file scanning feature.");
     }
     catch (const std::exception &e)
@@ -496,63 +475,6 @@ void MainWindow::startCamera()
     }
 }
 
-bool MainWindow::tryStartQt6Camera(const QList<QCameraDevice> &cameras)
-{
-    try
-    {
-        // List available cameras for debugging
-        ui->resultsTextEdit->append("Available Qt6 cameras:");
-        for (const auto &cameraDevice : cameras)
-        {
-            ui->resultsTextEdit->append(QString("- %1 (%2)").arg(cameraDevice.description(), cameraDevice.id()));
-        }
-
-        // Use the default camera
-        camera = std::make_unique<QCamera>(cameras.first());
-        captureSession = std::make_unique<QMediaCaptureSession>();
-
-        // Connect camera error signals
-        connect(camera.get(), &QCamera::errorOccurred, this, [this](QCamera::Error error, const QString &errorString)
-                { ui->resultsTextEdit->append(QString("Qt6 Camera error: %1").arg(errorString)); });
-
-        // Connect active state changes
-        connect(camera.get(), &QCamera::activeChanged, this, [this](bool active)
-                { ui->resultsTextEdit->append(QString("Qt6 Camera active state: %1").arg(active ? "true" : "false")); });
-
-        // Setup video surface for frame processing
-        videoSurface = new VideoSurface(this);
-        connect(videoSurface, &VideoSurface::frameAvailable, barcodeWorker, &BarcodeWorker::processFrame);
-
-        captureSession->setCamera(camera.get());
-
-        // In Qt6, we can set both video output and video sink
-        captureSession->setVideoOutput(videoWidget.get());
-        captureSession->setVideoSink(videoSurface);
-
-        camera->start();
-
-        // Show Qt6 video widget, hide OpenCV label
-        videoWidget->show();
-#ifdef ENABLE_OPENCV_CAMERA
-        if (cameraLabel)
-            cameraLabel->hide();
-        useOpenCVCamera = false;
-#endif
-
-        ui->startCameraButton->setEnabled(false);
-        ui->stopCameraButton->setEnabled(true);
-
-        ui->resultsTextEdit->append(QString("Qt6 camera started successfully: %1").arg(cameras.first().description()));
-        return true;
-    }
-    catch (const std::exception &e)
-    {
-        ui->resultsTextEdit->append(QString("Qt6 camera failed: %1").arg(e.what()));
-        return false;
-    }
-}
-
-#ifdef ENABLE_OPENCV_CAMERA
 bool MainWindow::tryStartOpenCVCamera()
 {
     if (!openCVCamera || !cameraLabel)
@@ -573,9 +495,9 @@ bool MainWindow::tryStartOpenCVCamera()
     // Try to start the first available camera
     if (openCVCamera->start(0))
     {
-        // Hide Qt6 video widget, show OpenCV label
-        videoWidget->hide();
+        // Show OpenCV camera label, hide Qt video widget
         cameraLabel->show();
+        if (videoWidget) videoWidget->hide();
         useOpenCVCamera = true;
 
         ui->startCameraButton->setEnabled(false);
@@ -590,188 +512,6 @@ bool MainWindow::tryStartOpenCVCamera()
         return false;
     }
 }
-#endif
-
-void MainWindow::testCameraDetection()
-{
-    QStringList debugInfo;
-    debugInfo << "=== Camera Detection Diagnostics ===";
-
-    // Check Qt Multimedia capabilities
-    debugInfo << QString("Qt Version: %1").arg(QT_VERSION_STR);
-    debugInfo << QString("Qt Runtime Version: %1").arg(qVersion());
-
-    // Check Qt paths and plugins
-    debugInfo << QString("Qt Plugin Path: %1").arg(QLibraryInfo::path(QLibraryInfo::PluginsPath));
-    debugInfo << QString("Application Dir: %1").arg(QCoreApplication::applicationDirPath());
-
-    // Check for multimedia plugins
-    QDir pluginsDir(QCoreApplication::applicationDirPath());
-    pluginsDir.cd("platforms");
-    debugInfo << QString("Platforms plugins: %1").arg(pluginsDir.exists() ? "FOUND" : "MISSING");
-
-    pluginsDir = QDir(QCoreApplication::applicationDirPath());
-    pluginsDir.cd("multimedia");
-    debugInfo << QString("Multimedia plugins: %1").arg(pluginsDir.exists() ? "FOUND" : "MISSING");
-    if (pluginsDir.exists())
-    {
-        QStringList plugins = pluginsDir.entryList(QStringList() << "*.dll", QDir::Files);
-        debugInfo << QString("Available multimedia plugins: %1").arg(plugins.join(", "));
-    }
-
-    // Check for specific Windows Media Foundation support
-    QDir wmfDir(QCoreApplication::applicationDirPath());
-    wmfDir.cd("multimedia");
-    bool hasWindowsPlugin = wmfDir.exists("windowsmediaplugin.dll");
-    bool hasFFmpegPlugin = wmfDir.exists("ffmpegmediaplugin.dll");
-    debugInfo << QString("Windows Media Foundation plugin: %1").arg(hasWindowsPlugin ? "FOUND" : "MISSING");
-    debugInfo << QString("FFmpeg plugin: %1").arg(hasFFmpegPlugin ? "FOUND" : "MISSING");
-
-    debugInfo << "";
-
-    // List all available cameras
-    QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
-    debugInfo << QString("Total cameras detected: %1").arg(cameras.size());
-
-    if (cameras.isEmpty())
-    {
-        debugInfo << "";
-        debugInfo << "=== OpenCV vs Qt Multimedia Comparison ===";
-        debugInfo << "OpenCV typically uses:";
-        debugInfo << "  - DirectShow (Windows native)";
-        debugInfo << "  - Media Foundation (Windows 10+)";
-        debugInfo << "  - DXVA (Direct3D Video Acceleration)";
-        debugInfo << "";
-        debugInfo << "Qt6 Multimedia uses:";
-        debugInfo << "  - Windows Media Foundation (preferred)";
-        debugInfo << "  - FFmpeg (fallback)";
-        debugInfo << "  - DirectShow (legacy)";
-        debugInfo << "";
-        debugInfo << "Possible solutions:";
-        debugInfo << "1. Set QT_MULTIMEDIA_PREFERRED_PLUGINS environment variable";
-        debugInfo << "2. Force DirectShow backend (more compatible with OpenCV)";
-        debugInfo << "3. Check Windows Media Foundation codec support";
-    }
-
-    for (int i = 0; i < cameras.size(); ++i)
-    {
-        const QCameraDevice &camera = cameras[i];
-        debugInfo << QString("Camera %1:").arg(i + 1);
-        debugInfo << QString("  - ID: %1").arg(camera.id());
-        debugInfo << QString("  - Description: %1").arg(camera.description());
-        debugInfo << QString("  - Default: %1").arg(camera.isDefault() ? "YES" : "NO");
-
-        // Test camera creation
-        QCamera *testCamera = new QCamera(camera);
-        debugInfo << QString("  - Creation: %1").arg(testCamera ? "SUCCESS" : "FAILED");
-
-        if (testCamera)
-        {
-            debugInfo << QString("  - Error State: %1").arg(testCamera->errorString());
-            delete testCamera;
-        }
-    }
-
-    // Windows-specific guidance
-    debugInfo << "";
-    debugInfo << "=== Windows Troubleshooting Steps ===";
-    debugInfo << "1. Check Windows Camera Privacy Settings:";
-    debugInfo << "   - Open Settings > Privacy & Security > Camera";
-    debugInfo << "   - Enable 'Camera access' (system-wide)";
-    debugInfo << "   - Enable 'Let apps access your camera'";
-    debugInfo << "   - Enable 'Let desktop apps access your camera'";
-    debugInfo << "";
-    debugInfo << "2. Check Device Manager:";
-    debugInfo << "   - Open Device Manager";
-    debugInfo << "   - Look under 'Cameras' or 'Imaging devices'";
-    debugInfo << "   - Ensure no yellow warning triangles";
-    debugInfo << "   - Try updating camera drivers";
-    debugInfo << "";
-    debugInfo << "3. Test with Windows Camera app:";
-    debugInfo << "   - Open Windows Camera app";
-    debugInfo << "   - Verify camera works there first";
-    debugInfo << "";
-    debugInfo << "4. Antivirus/Security Software:";
-    debugInfo << "   - Some security software blocks camera access";
-    debugInfo << "   - Check antivirus camera protection settings";
-
-    // Display all diagnostic information
-    ui->resultsTextEdit->clear();
-    ui->resultsTextEdit->append(debugInfo.join("\n"));
-}
-
-void MainWindow::testCameraWithBackendForcing()
-{
-    QStringList debugInfo;
-    debugInfo << "=== Testing Qt Multimedia Backends ===";
-
-    // Save current environment
-    QStringList originalEnv;
-    originalEnv << qgetenv("QT_MULTIMEDIA_PREFERRED_PLUGINS");
-    originalEnv << qgetenv("QT_QPA_PLATFORM_PLUGIN_PATH");
-
-    // Test different backends
-    QStringList backends = {"windowsmediaplugin", "ffmpegmediaplugin", "directshow"};
-
-    for (const QString &backend : backends)
-    {
-        debugInfo << QString("Testing backend: %1").arg(backend);
-
-        // Set environment variable to force backend
-        qputenv("QT_MULTIMEDIA_PREFERRED_PLUGINS", backend.toUtf8());
-
-        // Try to detect cameras with this backend
-        QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
-        debugInfo << QString("  Cameras found: %1").arg(cameras.size());
-
-        if (!cameras.isEmpty())
-        {
-            debugInfo << "  Camera details:";
-            for (const auto &camera : cameras)
-            {
-                debugInfo << QString("    - %1 (%2)").arg(camera.description(), camera.id());
-            }
-
-            // Try to create and start a camera
-            QCamera *testCamera = new QCamera(cameras.first());
-            if (testCamera)
-            {
-                debugInfo << "  Camera creation: SUCCESS";
-                debugInfo << QString("  Camera error: %1").arg(testCamera->errorString());
-                delete testCamera;
-            }
-        }
-        debugInfo << "";
-    }
-
-    // Restore original environment
-    if (!originalEnv[0].isEmpty())
-    {
-        qputenv("QT_MULTIMEDIA_PREFERRED_PLUGINS", originalEnv[0].toUtf8());
-    }
-    else
-    {
-        qunsetenv("QT_MULTIMEDIA_PREFERRED_PLUGINS");
-    }
-
-    debugInfo << "=== Alternative Solutions ===";
-    debugInfo << "1. Try setting environment variable before launching:";
-    debugInfo << "   set QT_MULTIMEDIA_PREFERRED_PLUGINS=windowsmediaplugin";
-    debugInfo << "   QtBarcodeScanner.exe";
-    debugInfo << "";
-    debugInfo << "2. Or try DirectShow compatibility:";
-    debugInfo << "   set QT_MULTIMEDIA_PREFERRED_PLUGINS=directshow";
-    debugInfo << "   QtBarcodeScanner.exe";
-    debugInfo << "";
-    debugInfo << "3. Check Windows Media Feature Pack (N/KN editions):";
-    debugInfo << "   Some Windows versions need Media Feature Pack installed";
-    debugInfo << "";
-    debugInfo << "4. Since OpenCV works, consider hybrid approach:";
-    debugInfo << "   Use OpenCV for camera capture + Qt for UI";
-
-    ui->resultsTextEdit->clear();
-    ui->resultsTextEdit->append(debugInfo.join("\n"));
-}
 
 void MainWindow::stopCamera()
 {
@@ -779,7 +519,19 @@ void MainWindow::stopCamera()
     currentCameraResults.clear();
     currentCameraFrame = QPixmap();
 
-#ifdef ENABLE_OPENCV_CAMERA
+    // Stop Qt6 camera if it's being used
+    if (camera && !useOpenCVCamera)
+    {
+        camera->stop();
+        camera.reset();
+        captureSession.reset();
+        if (videoWidget)
+        {
+            videoWidget->hide();
+        }
+        ui->resultsTextEdit->append("Qt6 camera stopped.");
+    }
+
     // Stop OpenCV camera if it's being used
     if (useOpenCVCamera && openCVCamera)
     {
@@ -791,28 +543,6 @@ void MainWindow::stopCamera()
         }
         useOpenCVCamera = false;
         ui->resultsTextEdit->append("OpenCV camera stopped.");
-    }
-#endif
-
-    // Stop Qt6 camera if it's being used
-    if (camera)
-    {
-        camera->stop();
-        camera.reset();
-        captureSession.reset();
-
-        if (videoSurface)
-        {
-            videoSurface->deleteLater();
-            videoSurface = nullptr;
-        }
-
-        if (videoWidget)
-        {
-            videoWidget->show(); // Make sure it's visible for next time
-        }
-
-        ui->resultsTextEdit->append("Qt6 camera stopped.");
     }
 
     ui->startCameraButton->setEnabled(true);
@@ -914,7 +644,7 @@ void MainWindow::onImageTabSelected()
     currentCameraFrame = QPixmap();
 
     // Stop camera if running
-    if (camera && camera->isActive())
+    if (openCVCamera && useOpenCVCamera)
     {
         stopCamera();
     }
@@ -975,7 +705,6 @@ void MainWindow::loadImageFile(const QString &filePath)
         loadMethod = QString("Qt (%1)").arg(format);
     }
 
-#ifdef ENABLE_OPENCV_CAMERA
     // If Qt failed, try OpenCV as fallback
     if (image.isNull())
     {
@@ -1003,17 +732,12 @@ void MainWindow::loadImageFile(const QString &filePath)
             ui->resultsTextEdit->append(QString("OpenCV exception: %1").arg(e.what()));
         }
     }
-#endif
 
     // Final check if we have a valid image
     if (image.isNull())
     {
         QString errorMsg = QString("Failed to load image: %1").arg(fileInfo.fileName());
-#ifdef ENABLE_OPENCV_CAMERA
         errorMsg += "\nBoth Qt and OpenCV failed to load this image.";
-#else
-        errorMsg += "\nQt failed to load this image. OpenCV fallback not available.";
-#endif
         QMessageBox::warning(this, "Error", errorMsg);
         ui->resultsTextEdit->append("Error: All image loading methods failed");
         return;
@@ -1028,7 +752,6 @@ void MainWindow::loadImageFile(const QString &filePath)
         ui->imageLabel->setPixmap(pixmap.scaled(ui->imageLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
         // Process the image for barcodes
-        qDebug() << "Invoking barcode processing for image:" << image.size() << "format:" << image.format();
         QMetaObject::invokeMethod(barcodeWorker, "processImage", Q_ARG(QImage, image));
 
         ui->resultsTextEdit->append(QString("Image loaded successfully via %1: %2").arg(loadMethod, fileInfo.fileName()));
