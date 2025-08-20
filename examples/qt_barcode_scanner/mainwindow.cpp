@@ -375,8 +375,7 @@ void MainWindow::changeEvent(QEvent *event)
 
         // Use a single-shot timer to resume camera updates after window state change completes
         QTimer::singleShot(500, this, [this]()
-                           {
-            cameraUpdatesPaused = false; });
+                           { cameraUpdatesPaused = false; });
 
         // Window state changed - camera updates paused temporarily
     }
@@ -423,25 +422,26 @@ void MainWindow::startCamera()
             if (!cameras.isEmpty())
             {
                 ui->resultsTextEdit->append(QString("Found %1 Qt camera(s)").arg(cameras.size()));
-                
+
                 // Create camera and capture session
                 camera = std::make_unique<QCamera>(cameras.first());
                 captureSession = std::make_unique<QMediaCaptureSession>();
-                
+
                 captureSession->setCamera(camera.get());
                 captureSession->setVideoOutput(videoWidget.get());
-                
+
                 // Start camera
                 camera->start();
-                
+
                 // Show Qt video widget, hide OpenCV label
                 videoWidget->show();
-                if (cameraLabel) cameraLabel->hide();
+                if (cameraLabel)
+                    cameraLabel->hide();
                 useOpenCVCamera = false;
-                
+
                 ui->startCameraButton->setEnabled(false);
                 ui->stopCameraButton->setEnabled(true);
-                
+
                 ui->resultsTextEdit->append("Qt6 camera started successfully!");
                 return;
             }
@@ -497,7 +497,8 @@ bool MainWindow::tryStartOpenCVCamera()
     {
         // Show OpenCV camera label, hide Qt video widget
         cameraLabel->show();
-        if (videoWidget) videoWidget->hide();
+        if (videoWidget)
+            videoWidget->hide();
         useOpenCVCamera = true;
 
         ui->startCameraButton->setEnabled(false);
