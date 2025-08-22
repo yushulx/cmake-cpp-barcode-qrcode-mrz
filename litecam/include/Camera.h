@@ -29,6 +29,7 @@
 #include <wrl/client.h>
 #include <dshow.h>
 
+using Microsoft::WRL::ComPtr;
 #elif __linux__
 #include <linux/videodev2.h>
 #include <fcntl.h>
@@ -106,7 +107,7 @@ public:
 private:
 #ifdef _WIN32
     void *reader;
-
+    ComPtr<IMFMediaSource> ms;
     bool initialized;
     void InitializeMediaFoundation();
     void ShutdownMediaFoundation();
