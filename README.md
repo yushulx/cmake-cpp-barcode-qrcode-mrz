@@ -1,11 +1,11 @@
 # Building 1D/2D Barcode Reader with C++ and CMake
-This repository contains examples demonstrating how to utilize the **Dynamsoft Barcode Reader SDK** to build barcode and QR code detection applications with C++ and CMake on **Windows**, **Linux**, **macOS**, and **Raspberry Pi**.
+This repository contains examples demonstrating how to utilize the **Dynamsoft Barcode Reader SDK** to build barcode and QR code detection applications with C++ and CMake on **Windows**, **Linux**, **macOS**, and **Raspberry Pi OS**.
 
 ## Prerequisites
-- Obtain a [30-day free trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) for Dynamsoft Barcode Reader. Update the following code in `main.cxx`:
+- Obtain a [30-day free trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) for Dynamsoft Barcode Reader.
 
     ```cpp
-    DBR_InitLicense(license, errorMsgBuffer, 512);
+    CLicenseManager::InitLicense("LICENSE-KEY", szErrorMsg, 256);
     ```
 
 - OpenCV Installation
@@ -22,7 +22,7 @@ This repository contains examples demonstrating how to utilize the **Dynamsoft B
 
 ## Supported Platforms
 - Windows x64
-- Linux x64/ARM64/ARM32
+- Linux x64/ARM64
 - macOS x64 (Intel/Apple Silicon)
 
 ## How to Build a CMake Project
@@ -98,53 +98,20 @@ This repository contains examples demonstrating how to utilize the **Dynamsoft B
     ```
 
 ## Examples
-- [Command Line](./examples/9.x/command_line)
-    
-    ```bash
-    ./main [image-file] [optional: license-file] [optional: template-file]
-    ```
+- [Command Line](./examples/command_line)
         
     ![Raspberry Pi Barcode Reader](https://www.dynamsoft.com/codepool/img/2016/03/rpi_dbr_result.png)
 
-- [Barcode Image File](./examples/9.x/opencv_file)
-    
-    ```bash
-    ./main 
-    ```
+- [Barcode Image File](./examples/opencv_file)
     
     ![Read barcodes from an image file](https://www.dynamsoft.com/codepool/img/2024/05/cpp-barcode-reader-opencv.jpg)
 
 
-- [Camera Scanning](./examples/9.x/opencv_camera)
-    
-    ```bash
-    ./main
-    ```
+- [Camera Scanning](./examples/opencv_camera)
     
     ![Camera barcode QR detection](https://www.dynamsoft.com/codepool/img/2024/05/cpp-barcode-scanner-opencv.jpg)
 
-- [Raspberry Pi with OLED Display](./examples/9.x/raspberry_pi_oled)
-    
-    ```bash
-    ./main
-    ```
-    
-    ![Raspberry Pi barcode QR detection](https://www.dynamsoft.com/codepool/img/2020/06/raspberry-pi-barcode-qr.png)
-
-- [Rust](./examples/9.x/rust/)
-
-    ![Rust Barcode Reader](https://www.dynamsoft.com/codepool/img/2024/06/rust-command-line-barcode-reader.jpg)
-
-- [WebP](./examples/9.x/webp/)
+- [WebP](./examples/webp/)
 
     ![Read barcodes from WebP image](https://www.dynamsoft.com/codepool/img/2024/06/cpp-decode-webp-barcode-qr-code.jpg)
 
-- [Qt](./examples/9.x/qt/)
-
-    ![Qt GUI barcode reader](https://www.dynamsoft.com/codepool/img/2021/08/barcode-scanner-webcam-qcamera.png)
-
-## Blog
-- [CMake: Build C++ Project for Windows, Linux and macOS](https://www.dynamsoft.com/codepool/cmake-cc-windows-linux-macos.html)
-- [My First C/C++ App Built with CMake on Windows](https://www.dynamsoft.com/codepool/cc-barcode-app-cmake-windows.html)
-- [How to Port Visual Studio C++ Project to Linux with CMake](https://www.dynamsoft.com/codepool/port-visual-studio-cpp-linux-cmake.html)
-- [Transforming Raspberry Pi 4 into a Barcode Scanner with a C++ App, USB Camera, and OLED Display](https://www.dynamsoft.com/codepool/raspberry-pi-cpp-barcode-reader.html)
