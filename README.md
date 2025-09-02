@@ -98,7 +98,7 @@ This repository contains examples demonstrating how to utilize the **Dynamsoft B
     ```
 
 ## Examples
-- [Command Line](./examples/command_line)
+- [Command Line](./examples/command-line)
         
     ![Raspberry Pi Barcode Reader](https://www.dynamsoft.com/codepool/img/2016/03/rpi_dbr_result.png)
 
