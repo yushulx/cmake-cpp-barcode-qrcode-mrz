@@ -1,0 +1,30 @@
+[package]
+name = "dynamsoft-barcode-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.0", features = ["derive"] }
+anyhow = "1.0"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+image = "0.24"
+walkdir = "2.0"
+path-absolutize = "3.0"
+
+# For Windows FFI bindings to Dynamsoft SDK
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+] }
+
+[build-dependencies]
+cc = "1.0"
+walkdir = "2.5.0"
+
+[[bin]]
+name = "barcode-scanner"
+path = "src/main.rs"
