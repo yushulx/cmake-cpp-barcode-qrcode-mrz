@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 	char errorMsg[512] = {0};
 
 	CCaptureVisionRouter *cvr = new CCaptureVisionRouter;
-	// errorCode = cvr->InitSettingsFromFile("DBR-PresetTemplates.json", errorMsg, 512);
+	errorCode = cvr->InitSettingsFromFile("Templates/DBR-PresetTemplates.json", errorMsg, 512);
 	if (errorCode != EC_OK)
 	{
 		cout << "error:" << errorMsg << endl;
@@ -194,6 +194,7 @@ int main(int argc, char *argv[])
 				CCapturedResult *result = (CCapturedResult *)captureResultArray->GetResult(i);
 				result->GetOriginalImageTag()->GetImageId();
 				cout << ">>>>>>>>>>>>>>>>> Image " << i + 1 << ":" << endl;
+				cout << result->GetErrorString() << endl;
 				if (result->GetErrorCode() != 0)
 				{
 					cout << "Error: " << result->GetErrorCode() << "," << result->GetErrorString() << endl;
