@@ -31,8 +31,20 @@ add_definitions(-DENABLE_OPENCV_CAMERA=1)
 # Include DCR headers
 include_directories("${PROJECT_SOURCE_DIR}/../../dcv/include/")
 
-# Include OpenCV headers
-include_directories("${PROJECT_SOURCE_DIR}/../../cvcamera/include/")
+# OpenCV setup - different approach for each platform
+if(WINDOWS)
+    # Include OpenCV headers from bundled libraries
+    include_directories("${PROJECT_SOURCE_DIR}/../../cvcamera/include/")
+else()
+    # Use system OpenCV on macOS and Linux
+    find_package(OpenCV REQUIRED)
+    if(OpenCV_FOUND)
+        include_directories(${OpenCV_INCLUDE_DIRS})
+        message(STATUS "OpenCV found: ${OpenCV_VERSION}")
+    else()
+        message(FATAL_ERROR "OpenCV not found. Please install OpenCV development packages.")
+    endif()
+endif()
 
 # Find Qt6 - Core, Widgets, and Multimedia components
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Multimedia MultimediaWidgets)
@@ -84,13 +96,18 @@ if(WINDOWS)
         "${OPENCV_LIB_DIR}/opencv_imgcodecs480.lib"
     )
 elseif(MACOS)
-    link_directories("${PROJECT_SOURCE_DIR}/../../dcv/lib/mac/")
+    # Set library directories - use absolute path
+    set(DCR_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../dcv/lib/mac")
+    
+    # Link DCR libraries with full paths and proper dylib names
     target_link_libraries(QtBarcodeScanner PRIVATE 
-        "DynamsoftCaptureVisionRouter"
-        "DynamsoftLicense"
-        "DynamsoftCore"
-        "DynamsoftUtility"
-        "DynamsoftBarcodeReader"
+        "${DCR_LIB_DIR}/libDynamsoftCaptureVisionRouter.dylib"
+        "${DCR_LIB_DIR}/libDynamsoftLicense.dylib"
+        "${DCR_LIB_DIR}/libDynamsoftCore.dylib"
+        "${DCR_LIB_DIR}/libDynamsoftUtility.dylib"
+        "${DCR_LIB_DIR}/libDynamsoftBarcodeReader.dylib"
+        # Link system OpenCV libraries
+        ${OpenCV_LIBS}
     )
 elseif(LINUX)
     link_directories("${PROJECT_SOURCE_DIR}/../../dcv/lib/linux/")
@@ -100,6 +117,8 @@ elseif(LINUX)
         "DynamsoftCore"
         "DynamsoftUtility" 
         "DynamsoftBarcodeReader"
+        # Link system OpenCV libraries
+        ${OpenCV_LIBS}
     )
 endif()
 
