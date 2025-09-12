@@ -205,20 +205,7 @@ if(WINDOWS)
         "C:/Qt/6.7.2/msvc2019_64/plugins/platforms/qminimal.dll"
         $<TARGET_FILE_DIR:QtBarcodeScanner>/platforms/)
     
-    # Copy Dynamsoft resource files (Templates and Models)
-    add_custom_command(TARGET QtBarcodeScanner POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory 
-        $<TARGET_FILE_DIR:QtBarcodeScanner>/Templates
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/../../dcv/resource/Templates"
-        $<TARGET_FILE_DIR:QtBarcodeScanner>/Templates)
     
-    add_custom_command(TARGET QtBarcodeScanner POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory 
-        $<TARGET_FILE_DIR:QtBarcodeScanner>/Models
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/../../dcv/resource/Models"
-        $<TARGET_FILE_DIR:QtBarcodeScanner>/Models)
     
     # Copy DCR DLLs - Copy entire directory like command-line example
     add_custom_command(TARGET QtBarcodeScanner POST_BUILD 
@@ -252,6 +239,28 @@ if(WINDOWS)
         "${PROJECT_SOURCE_DIR}/../../cvcamera/lib/windows/opencv_imgcodecs480.dll"
         $<TARGET_FILE_DIR:QtBarcodeScanner>)
 endif()
+
+# Copy Dynamsoft resource files (Templates and Models)
+add_custom_command(TARGET QtBarcodeScanner POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory 
+    $<TARGET_FILE_DIR:QtBarcodeScanner>/Templates
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${PROJECT_SOURCE_DIR}/../../dcv/resource/Templates"
+    $<TARGET_FILE_DIR:QtBarcodeScanner>/Templates)
+
+add_custom_command(TARGET QtBarcodeScanner POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory 
+    $<TARGET_FILE_DIR:QtBarcodeScanner>/Models
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${PROJECT_SOURCE_DIR}/../../dcv/resource/Models"
+    $<TARGET_FILE_DIR:QtBarcodeScanner>/Models)
+
+add_custom_command(TARGET QtBarcodeScanner POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory 
+    $<TARGET_FILE_DIR:QtBarcodeScanner>/ParserResources
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${PROJECT_SOURCE_DIR}/../../dcv/resource/ParserResources"
+    $<TARGET_FILE_DIR:QtBarcodeScanner>/ParserResources)
 
 # Set output directories
 set_target_properties(QtBarcodeScanner PROPERTIES

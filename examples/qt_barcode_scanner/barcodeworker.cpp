@@ -44,6 +44,13 @@ void BarcodeWorker::initialize()
             return;
         }
 
+        ret = m_router->InitSettingsFromFile("Templates/DBR-PresetTemplates.json", errorMsgBuffer, 512);
+        if (ret != EC_OK)
+        {
+            QString errorMsg = QString::fromUtf8(errorMsgBuffer);
+            qWarning() << "Failed to initialize BarcodeWorker:" << errorMsg;
+            emit licenseStatusChanged(QString("License: Failed (%1)").arg(errorMsg), false);
+        }
         // Add this as result receiver
         m_router->AddResultReceiver(this);
 
@@ -93,7 +100,6 @@ void BarcodeWorker::processImage(const QImage &image)
 
         // Process the image using the barcode reading preset template
         CCapturedResult *result = m_router->Capture(&imageData, CPresetTemplate::PT_READ_BARCODES);
-
         if (result)
         {
             if (result->GetErrorCode() != EC_OK)
