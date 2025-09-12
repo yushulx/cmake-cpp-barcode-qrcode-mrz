@@ -54,7 +54,8 @@ class MyCapturedResultReceiver : public CCapturedResultReceiver
 					cout << "Result " << i + 1 << endl;
 					cout << "Barcode Format: " << barcodeResultItem->GetFormatString() << endl;
 					cout << "Barcode Text: " << barcodeResultItem->GetText() << endl;
-					CPoint *points = barcodeResultItem->GetLocation().points;
+					CQuadrilateral location = barcodeResultItem->GetLocation();
+					CPoint *points = location.points;
 					for (int j = 0; j < 4; j++)
 					{
 						cout << "Point " << j + 1 << ": (" << points[j][0] << ", " << points[j][1] << ")" << endl;
@@ -228,8 +229,6 @@ int main(int argc, char *argv[])
 
 				result->Release();
 			}
-
-			captureResultArray->Release();
 		}
 	}
 
