@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 
 			for (int i = 0; i < count; i++)
 			{
-				CCapturedResult *result = (CCapturedResult *)captureResultArray->GetResult(i);
+				const CCapturedResult *result = captureResultArray->GetResult(i);
 				result->GetOriginalImageTag()->GetImageId();
 				cout << ">>>>>>>>>>>>>>>>> Image " << i + 1 << ":" << endl;
 				cout << result->GetErrorString() << endl;
@@ -226,9 +226,8 @@ int main(int argc, char *argv[])
 				}
 				if (barcodeResult)
 					barcodeResult->Release();
-
-				result->Release();
 			}
+			captureResultArray->Release();
 		}
 	}
 
