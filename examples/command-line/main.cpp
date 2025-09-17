@@ -109,12 +109,14 @@ bool GetImagePath(char *pImagePath)
 		// Copy input to pImagePath ensuring not to exceed buffer size
 		if (input.length() < 512)
 		{
-			strcpy_s(pImagePath, 512, input.c_str());
+			strncpy(pImagePath, input.c_str(), 511);
+			pImagePath[input.length()] = '\0';
 		}
 		else
 		{
 			input = input.substr(0, 511); // Truncate if too long
-			strcpy_s(pImagePath, 512, input.c_str());
+			strncpy(pImagePath, input.c_str(), 511);
+			pImagePath[511] = '\0';
 		}
 
 		// Check if file or directory exists
@@ -242,7 +244,8 @@ void displayDetailedResults(CCaptureVisionRouter *cvr, const string &filePath)
 				cout << "Barcode Format: " << barcodeResultItem->GetFormatString() << endl;
 				cout << "Barcode Text: " << barcodeResultItem->GetText() << endl;
 
-				CPoint *points = barcodeResultItem->GetLocation().points;
+				CQuadrilateral location = barcodeResultItem->GetLocation();
+				CPoint *points = location.points;
 				for (int k = 0; k < 4; k++)
 				{
 					cout << "Point " << k + 1 << ": (" << points[k][0] << ", " << points[k][1] << ")" << endl;
@@ -487,6 +490,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	delete cvr, cvr = NULL, listener, capturedReceiver, fileFetcher;
+	delete cvr;
+	delete listener;
+	delete capturedReceiver;
+	delete fileFetcher;
 	return 0;
 }
