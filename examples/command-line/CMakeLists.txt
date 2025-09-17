@@ -32,13 +32,19 @@ endif()
 # Set RPATH
 if(CMAKE_HOST_UNIX)
     if(CMAKE_HOST_APPLE)
-        SET(CMAKE_CXX_FLAGS "-std=c++11 -O3 -Wl,-rpath,@loader_path")
+        SET(CMAKE_CXX_FLAGS "-std=c++17 -O3 -Wl,-rpath,@loader_path")
         SET(CMAKE_INSTALL_RPATH "@loader_path")
     else()
-        SET(CMAKE_CXX_FLAGS "-std=c++11 -O3 -Wl,-rpath=$ORIGIN")
+        SET(CMAKE_CXX_FLAGS "-std=c++17 -O3 -Wl,-rpath=$ORIGIN")
         SET(CMAKE_INSTALL_RPATH "$ORIGIN")
     endif()
     SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
+
+# Set C++ standard for Windows
+if(WINDOWS)
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
 # Add search path for include and lib files
@@ -67,10 +73,10 @@ include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/../../dcv/inc
 add_executable(${PROJECT_NAME} main.cpp)
 if(WINDOWS)
     if(CMAKE_CL_64)
-        target_link_libraries (${PROJECT_NAME} "DynamsoftCorex64" "DynamsoftLicensex64" "DynamsoftCaptureVisionRouterx64" "DynamsoftUtilityx64" )
+        target_link_libraries (${PROJECT_NAME} "DynamsoftCorex64" "DynamsoftLicensex64" "DynamsoftCaptureVisionRouterx64" "DynamsoftUtilityx64" "DynamsoftBarcodeReaderx64")
     endif()
 else()
-    target_link_libraries (${PROJECT_NAME} "DynamsoftCore" "DynamsoftLicense" "DynamsoftCaptureVisionRouter" "DynamsoftUtility"  pthread)
+    target_link_libraries (${PROJECT_NAME} "DynamsoftCore" "DynamsoftLicense" "DynamsoftCaptureVisionRouter" "DynamsoftUtility" "DynamsoftBarcodeReader" pthread)
 endif()
 
 if(WINDOWS)

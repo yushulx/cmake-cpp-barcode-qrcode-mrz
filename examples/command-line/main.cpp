@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <filesystem>
+#include <algorithm>
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #include <conio.h>
@@ -91,7 +93,7 @@ bool GetImagePath(char *pImagePath)
 	std::string input;
 	while (true)
 	{
-		std::cout << "\n>> Step 1: Input your image file's full path:\n";
+		std::cout << "\n>> Step 1: Input your image file's full path or directory path:\n";
 		std::getline(std::cin, input);
 
 		// Trim whitespace and remove surrounding quotes if present
@@ -105,18 +107,23 @@ bool GetImagePath(char *pImagePath)
 		}
 
 		// Copy input to pImagePath ensuring not to exceed buffer size
-		std::strncpy(pImagePath, input.c_str(), 511);
-		pImagePath[511] = '\0'; // Ensure null-termination
-
-		// Check if file exists using std::ifstream
-		std::ifstream file(pImagePath);
-		if (file.good())
+		if (input.length() < 512)
 		{
-			file.close();
-			return false; // File path is valid
+			strcpy_s(pImagePath, 512, input.c_str());
+		}
+		else
+		{
+			input = input.substr(0, 511); // Truncate if too long
+			strcpy_s(pImagePath, 512, input.c_str());
 		}
 
-		std::cout << "Please input a valid path.\n";
+		// Check if file or directory exists
+		if (filesystem::exists(pImagePath))
+		{
+			return false; // Path is valid
+		}
+
+		std::cout << "Please input a valid file or directory path.\n";
 	}
 }
 
@@ -131,11 +138,132 @@ bool endsWith(const std::string &str, const std::string &suffix)
 	return str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
+// Structure to hold processing statistics
+struct ProcessingStats
+{
+	int totalImages = 0;
+	int imagesWithBarcodes = 0;
+	int totalBarcodes = 0;
+	vector<string> failedFiles;
+};
+
+// Check if a file is a supported image format
+bool isSupportedImageFile(const string &filePath)
+{
+	string extension = filesystem::path(filePath).extension().string();
+	transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
+	return extension == ".jpg" || extension == ".jpeg" || extension == ".png" ||
+		   extension == ".bmp" || extension == ".tif" || extension == ".tiff" ||
+		   extension == ".gif" || extension == ".pdf";
+}
+
+// Get all supported image files from a directory
+vector<string> getImageFilesFromDirectory(const string &dirPath)
+{
+	vector<string> imageFiles;
+
+	try
+	{
+		for (const auto &entry : filesystem::recursive_directory_iterator(dirPath))
+		{
+			if (entry.is_regular_file() && isSupportedImageFile(entry.path().string()))
+			{
+				imageFiles.push_back(entry.path().string());
+			}
+		}
+	}
+	catch (const filesystem::filesystem_error &e)
+	{
+		cout << "Error accessing directory: " << e.what() << endl;
+	}
+
+	return imageFiles;
+}
+
+// Process a single image file and return the number of barcodes found
+int processImageFile(CCaptureVisionRouter *cvr, const string &filePath)
+{
+	CCapturedResultArray *captureResultArray = cvr->CaptureMultiPages(filePath.c_str(), CPresetTemplate::PT_READ_BARCODES);
+
+	int totalBarcodes = 0;
+	int count = captureResultArray->GetResultsCount();
+
+	for (int i = 0; i < count; i++)
+	{
+		const CCapturedResult *result = captureResultArray->GetResult(i);
+
+		if (result->GetErrorCode() != 0)
+		{
+			continue;
+		}
+
+		CDecodedBarcodesResult *barcodeResult = result->GetDecodedBarcodesResult();
+		if (barcodeResult != nullptr && barcodeResult->GetErrorCode() == 0)
+		{
+			int itemCount = barcodeResult->GetItemsCount();
+			totalBarcodes += itemCount;
+		}
+		if (barcodeResult)
+			barcodeResult->Release();
+	}
+
+	captureResultArray->Release();
+	return totalBarcodes;
+}
+
+// Display detailed results for a single image (original behavior)
+void displayDetailedResults(CCaptureVisionRouter *cvr, const string &filePath)
+{
+	cout << "Processing file: " << filePath << endl;
+
+	CCapturedResultArray *captureResultArray = cvr->CaptureMultiPages(filePath.c_str(), CPresetTemplate::PT_READ_BARCODES);
+
+	int count = captureResultArray->GetResultsCount();
+
+	for (int i = 0; i < count; i++)
+	{
+		const CCapturedResult *result = captureResultArray->GetResult(i);
+		result->GetOriginalImageTag()->GetImageId();
+		cout << ">>>>>>>>>>>>>>>>> Image " << i + 1 << ":" << endl;
+		cout << result->GetErrorString() << endl;
+		if (result->GetErrorCode() != 0)
+			continue;
+
+		CDecodedBarcodesResult *barcodeResult = result->GetDecodedBarcodesResult();
+		if (barcodeResult != nullptr && barcodeResult->GetErrorCode() == 0)
+		{
+			int itemCount = barcodeResult->GetItemsCount();
+			cout << "Decoded " << itemCount << " barcodes" << endl;
+			for (int j = 0; j < itemCount; j++)
+			{
+				const CBarcodeResultItem *barcodeResultItem = barcodeResult->GetItem(j);
+				cout << "Result " << j + 1 << endl;
+				cout << "Barcode Format: " << barcodeResultItem->GetFormatString() << endl;
+				cout << "Barcode Text: " << barcodeResultItem->GetText() << endl;
+
+				CPoint *points = barcodeResultItem->GetLocation().points;
+				for (int k = 0; k < 4; k++)
+				{
+					cout << "Point " << k + 1 << ": (" << points[k][0] << ", " << points[k][1] << ")" << endl;
+				}
+			}
+		}
+		if (barcodeResult)
+			barcodeResult->Release();
+	}
+	captureResultArray->Release();
+}
+
 int main(int argc, char *argv[])
 {
+	const char *version = CBarcodeReaderModule::GetVersion();
 	printf("*************************************************\r\n");
-	printf("Welcome to Dynamsoft Barcode Demo\r\n");
+	printf("Welcome to Dynamsoft Barcode v%s Demo \r\n", version);
 	printf("*************************************************\r\n");
+	printf("Supports both single files and directories.\r\n");
+	printf("Usage: %s [file_or_directory1] [file_or_directory2] ...\r\n", argc > 0 ? argv[0] : "barcode_scanner");
+	printf("Or run without arguments for interactive mode.\r\n");
 	printf("Hints: Please input 'Q' or 'q' to quit the application.\r\n");
 
 	int iRet = -1;
@@ -168,66 +296,194 @@ int main(int argc, char *argv[])
 	cvr->AddResultReceiver(capturedReceiver);
 	cvr->AddImageSourceStateListener(listener);
 
-	while (1)
+	// Check if command line arguments are provided
+	if (argc > 1)
 	{
-		bExit = GetImagePath(pszImageFile);
-		if (bExit)
-			break;
-		float costTime = 0.0;
-		int errorCode = 0;
+		// Command line mode - process all provided arguments
+		ProcessingStats totalStats;
 
-		string path = string(pszImageFile);
-		// fileFetcher->SetFile(pszImageFile);
-		// errorCode = cvr->StartCapturing(CPresetTemplate::PT_READ_BARCODES, true, errorMsg, 512);
-		// if (endsWith(path, ".pdf") || endsWith(path, ".tif"))
-		// {
-		// 	fileFetcher->SetFile(pszImageFile);
-		// 	errorCode = cvr->StartCapturing(CPresetTemplate::PT_READ_BARCODES, true, errorMsg, 512);
-		// }
-		// else
+		for (int argIndex = 1; argIndex < argc; argIndex++)
 		{
-			CCapturedResultArray *captureResultArray = cvr->CaptureMultiPages(pszImageFile, CPresetTemplate::PT_READ_BARCODES);
+			string inputPath = argv[argIndex];
 
-			int count = captureResultArray->GetResultsCount();
-
-			for (int i = 0; i < count; i++)
+			if (filesystem::is_directory(inputPath))
 			{
-				const CCapturedResult *result = captureResultArray->GetResult(i);
-				result->GetOriginalImageTag()->GetImageId();
-				cout << ">>>>>>>>>>>>>>>>> Image " << i + 1 << ":" << endl;
-				cout << result->GetErrorString() << endl;
-				if (result->GetErrorCode() != 0)
-				{
-					cout << "Error: " << result->GetErrorCode() << "," << result->GetErrorString() << endl;
-				}
-				CDecodedBarcodesResult *barcodeResult = result->GetDecodedBarcodesResult();
-				if (barcodeResult == nullptr || barcodeResult->GetItemsCount() == 0)
-				{
-					cout << "No barcode found." << endl;
-				}
-				else
-				{
-					int barcodeResultItemCount = barcodeResult->GetItemsCount();
-					cout << "Decoded " << barcodeResultItemCount << " barcodes" << endl;
+				// Process directory
+				cout << "\n=== Processing Directory: " << inputPath << " ===" << endl;
 
-					for (int j = 0; j < barcodeResultItemCount; j++)
+				vector<string> imageFiles = getImageFilesFromDirectory(inputPath);
+				ProcessingStats dirStats;
+				dirStats.totalImages = imageFiles.size();
+
+				if (imageFiles.empty())
+				{
+					cout << "No supported image files found in directory." << endl;
+					continue;
+				}
+
+				cout << "Found " << imageFiles.size() << " image files. Processing..." << endl;
+
+				for (const string &filePath : imageFiles)
+				{
+					try
 					{
-						const CBarcodeResultItem *barcodeResultItem = barcodeResult->GetItem(j);
-						cout << "Result " << j + 1 << endl;
-						cout << "Barcode Format: " << barcodeResultItem->GetFormatString() << endl;
-						cout << "Barcode Text: " << barcodeResultItem->GetText() << endl;
-
-						CPoint *points = barcodeResultItem->GetLocation().points;
-						for (int j = 0; j < 4; j++)
+						int barcodeCount = processImageFile(cvr, filePath);
+						if (barcodeCount > 0)
 						{
-							cout << "Point " << j + 1 << ": (" << points[j][0] << ", " << points[j][1] << ")" << endl;
+							dirStats.imagesWithBarcodes++;
+							dirStats.totalBarcodes += barcodeCount;
+							cout << filesystem::path(filePath).filename().string()
+								 << " (" << barcodeCount << " barcodes)" << endl;
+						}
+						else
+						{
+							cout << filesystem::path(filePath).filename().string()
+								 << " (no barcodes)" << endl;
 						}
 					}
+					catch (const exception &e)
+					{
+						dirStats.failedFiles.push_back(filePath);
+						cout << "✗ " << filesystem::path(filePath).filename().string()
+							 << " (error: " << e.what() << ")" << endl;
+					}
 				}
-				if (barcodeResult)
-					barcodeResult->Release();
+
+				// Display directory statistics
+				cout << "\n--- Directory Statistics ---" << endl;
+				cout << "Total images processed: " << dirStats.totalImages << endl;
+				cout << "Images with barcodes: " << dirStats.imagesWithBarcodes << endl;
+				cout << "Images without barcodes: " << (dirStats.totalImages - dirStats.imagesWithBarcodes - dirStats.failedFiles.size()) << endl;
+				if (!dirStats.failedFiles.empty())
+				{
+					cout << "Failed to process: " << dirStats.failedFiles.size() << endl;
+				}
+				cout << "Total barcodes found: " << dirStats.totalBarcodes << endl;
+				if (dirStats.totalImages > 0)
+				{
+					cout << "Success rate: " << (double(dirStats.imagesWithBarcodes) / dirStats.totalImages * 100.0) << "%" << endl;
+				}
+
+				// Add to total stats
+				totalStats.totalImages += dirStats.totalImages;
+				totalStats.imagesWithBarcodes += dirStats.imagesWithBarcodes;
+				totalStats.totalBarcodes += dirStats.totalBarcodes;
+				totalStats.failedFiles.insert(totalStats.failedFiles.end(),
+											  dirStats.failedFiles.begin(), dirStats.failedFiles.end());
 			}
-			captureResultArray->Release();
+			else if (filesystem::is_regular_file(inputPath) && isSupportedImageFile(inputPath))
+			{
+				// Process single file with detailed output
+				cout << "\n=== Processing File: " << inputPath << " ===" << endl;
+				displayDetailedResults(cvr, inputPath);
+
+				// Update total stats
+				totalStats.totalImages++;
+				int barcodeCount = processImageFile(cvr, inputPath);
+				if (barcodeCount > 0)
+				{
+					totalStats.imagesWithBarcodes++;
+					totalStats.totalBarcodes += barcodeCount;
+				}
+			}
+			else
+			{
+				cout << "Warning: '" << inputPath << "' is not a valid file or directory, or not a supported image format." << endl;
+			}
+		}
+
+		// Display overall statistics if multiple inputs were processed
+		if (argc > 2)
+		{
+			cout << "\n=== Overall Statistics ===" << endl;
+			cout << "Total images processed: " << totalStats.totalImages << endl;
+			cout << "Images with barcodes: " << totalStats.imagesWithBarcodes << endl;
+			cout << "Images without barcodes: " << (totalStats.totalImages - totalStats.imagesWithBarcodes - totalStats.failedFiles.size()) << endl;
+			if (!totalStats.failedFiles.empty())
+			{
+				cout << "Failed to process: " << totalStats.failedFiles.size() << endl;
+			}
+			cout << "Total barcodes found: " << totalStats.totalBarcodes << endl;
+			if (totalStats.totalImages > 0)
+			{
+				cout << "Overall success rate: " << (double(totalStats.imagesWithBarcodes) / totalStats.totalImages * 100.0) << "%" << endl;
+			}
+		}
+	}
+	else
+	{
+		// Interactive mode - original behavior with directory support
+		while (1)
+		{
+			bExit = GetImagePath(pszImageFile);
+			if (bExit)
+				break;
+
+			string inputPath = string(pszImageFile);
+
+			if (filesystem::is_directory(inputPath))
+			{
+				// Process directory in interactive mode
+				cout << "\nProcessing directory: " << inputPath << endl;
+
+				vector<string> imageFiles = getImageFilesFromDirectory(inputPath);
+				ProcessingStats dirStats;
+				dirStats.totalImages = imageFiles.size();
+
+				if (imageFiles.empty())
+				{
+					cout << "No supported image files found in directory." << endl;
+					continue;
+				}
+
+				cout << "Found " << imageFiles.size() << " image files. Processing..." << endl;
+
+				for (const string &filePath : imageFiles)
+				{
+					try
+					{
+						int barcodeCount = processImageFile(cvr, filePath);
+						if (barcodeCount > 0)
+						{
+							dirStats.imagesWithBarcodes++;
+							dirStats.totalBarcodes += barcodeCount;
+							cout << "✓ " << filesystem::path(filePath).filename().string()
+								 << " (" << barcodeCount << " barcodes)" << endl;
+						}
+						else
+						{
+							cout << "✗ " << filesystem::path(filePath).filename().string()
+								 << " (no barcodes)" << endl;
+						}
+					}
+					catch (const exception &e)
+					{
+						dirStats.failedFiles.push_back(filePath);
+						cout << "✗ " << filesystem::path(filePath).filename().string()
+							 << " (error: " << e.what() << ")" << endl;
+					}
+				}
+
+				// Display directory statistics
+				cout << "\n--- Directory Statistics ---" << endl;
+				cout << "Total images processed: " << dirStats.totalImages << endl;
+				cout << "Images with barcodes: " << dirStats.imagesWithBarcodes << endl;
+				cout << "Images without barcodes: " << (dirStats.totalImages - dirStats.imagesWithBarcodes - dirStats.failedFiles.size()) << endl;
+				if (!dirStats.failedFiles.empty())
+				{
+					cout << "Failed to process: " << dirStats.failedFiles.size() << endl;
+				}
+				cout << "Total barcodes found: " << dirStats.totalBarcodes << endl;
+				if (dirStats.totalImages > 0)
+				{
+					cout << "Success rate: " << (double(dirStats.imagesWithBarcodes) / dirStats.totalImages * 100.0) << "%" << endl;
+				}
+			}
+			else
+			{
+				// Process single file with detailed output (original behavior)
+				displayDetailedResults(cvr, inputPath);
+			}
 		}
 	}
 

@@ -1,5 +1,5 @@
 #pragma once
-#define DYNAMSOFT_CORE_VERSION "4.0.60.5318"
+#define DYNAMSOFT_CORE_VERSION "4.2.10.5856"
 
 /**Enumeration section*/
 
@@ -203,7 +203,7 @@ typedef enum ErrorCode {
 
 	/*The template version is incompatible. Please use a compatible template.*/
 	EC_TEMPLATE_VERSION_INCOMPATIBLE = -10081,
-
+	
 	/** -20000~-29999: DLS license error code. */
 	/**No license.*/
 	EC_NO_LICENSE = -20000,
@@ -240,13 +240,13 @@ typedef enum ErrorCode {
 
 	/**Online license validation failed due to network issues.Using cached license information for validation.*/
 	EC_LICENSE_CACHE_USED = -20012,
-	
+		
 	/*License authentication failed: quota exceeded.*/
 	EC_LICENSE_AUTH_QUOTA_EXCEEDED = -20013,
-	
+
 	/**License restriction: the number of results has exceeded the allowed limit.*/
 	EC_LICENSE_RESULTS_LIMIT_EXCEEDED = -20014,
-	
+
 	/**Failed to reach License Server.*/
 	EC_FAILED_TO_REACH_DLS = -20200,
 
@@ -1728,6 +1728,7 @@ namespace dynamsoft
 			CRect* cropRegion;
 			int originalWidth;
 			int originalHeight;
+			int clarity;
 
 		public:
 			/**
@@ -1787,6 +1788,14 @@ namespace dynamsoft
 			CImageTag* Clone()const override;
 
 			/**
+			* Gets the clarity of the video frame.
+			*
+			* @return Returns the clarity of the video frame.
+			*
+			*/
+			int GetClarity() const;
+
+			/**
 			* The constructor of the CVideoFrameTag class.
 			*
 			* @param [in] quality The quality of the video frame.
@@ -1794,10 +1803,11 @@ namespace dynamsoft
 			* @param [in] cropRegion A pointer to a CRect object that represents the crop region of the video frame.
 			* @param [in] originalWidth The original width of the video frame.
 			* @param [in] originalHeight The original height of the video frame.
+			* @param [in] clarity The clarity of the video frame.
 			*
 			*/
 			CVideoFrameTag(VideoFrameQuality quality, bool isCropped, const CRect* cropRegion,
-				int originalWidth, int originalHeight);
+				int originalWidth, int originalHeight, int clarity = 0);
 
 			/**
 			* The destructor of the CVideoFrameTag class.
@@ -2004,7 +2014,6 @@ namespace dynamsoft
 			 * @return Returns a pointer to a copy of the captured result item.
 			 */
 			virtual CCapturedResultItem* Clone() const = 0;
-
 		};
 
 		/**

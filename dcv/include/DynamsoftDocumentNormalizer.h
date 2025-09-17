@@ -15,7 +15,7 @@
 
 #include "DynamsoftCore.h"
 
-#define DDN_VERSION                  "3.0.60.5318"
+#define DDN_VERSION                  "3.2.10.5856"
 
 /**Enums section*/
 
@@ -639,7 +639,6 @@ namespace dynamsoft
 			 *
 			 */
 			virtual void SetCrossVerificationStatus(CrossVerificationStatus status) = 0;
-
 		};
 
 		/**
@@ -696,7 +695,6 @@ namespace dynamsoft
 			 *                     coordinates from the original image to the local image.
 			 */
 			virtual void GetOriginalToLocalMatrix(double matrix[9]) const = 0;
-
 		};
 
 		/**
@@ -729,7 +727,6 @@ namespace dynamsoft
 			 *                     coordinates from the original image to the local image.
 			 */
 			virtual void GetOriginalToLocalMatrix(double matrix[9]) const = 0;
-
 		};
 
 		/**
@@ -872,6 +869,8 @@ namespace dynamsoft
 			 *
 			 */
 			virtual void Release() = 0;
+
+			virtual void CopyTo(CProcessedDocumentResult* result) const = 0;
 
 		};
 

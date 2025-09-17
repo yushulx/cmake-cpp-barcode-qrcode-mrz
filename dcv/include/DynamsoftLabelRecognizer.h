@@ -14,7 +14,7 @@
 
 #include "DynamsoftCore.h"
 
-#define DLR_VERSION                  "4.0.60.5318"
+#define DLR_VERSION                  "4.2.10.5856"
 
 /**
 * @enum RawTextLineStatus
@@ -256,7 +256,6 @@ namespace dynamsoft
 				 * @return Returns 0 if success, otherwise an error code.
 				 */
 				virtual int SetLocation(const CQuadrilateral& location) = 0;
-
 			};
 
 			/**
@@ -712,7 +711,6 @@ namespace dynamsoft
 			 *
 			 */
 			virtual int SetLocation(const CQuadrilateral& location) = 0;
-
 		};
 
 		/**

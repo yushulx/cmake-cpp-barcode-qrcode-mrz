@@ -13,7 +13,7 @@
 #endif
 
 #include"DynamsoftCaptureVisionRouter.h"
-#define DISA_VERSION "2.0.60.5318"
+#define DISA_VERSION "2.2.10.5856"
 
 #ifdef __cplusplus
 
@@ -202,7 +202,7 @@ namespace dynamsoft {
 
 			virtual void ClearStatus();
 
-			virtual void Init();
+			virtual void Init(CCaptureVisionRouter* router = nullptr);
 
 			virtual const char* GetEncryptedString();
 
@@ -453,30 +453,30 @@ namespace dynamsoft {
 			*/
 			int SaveToMemory(const CImageData* pImageData, ImageFileFormat imageFormat, unsigned char** imageFileBytes, int* imageFileBytesLength);
 
-			
-            /**
-            * Reads an image from a Base64-encoded string.
-            *
-            * @param [in] base64String A null-terminated string containing the Base64-encoded image data.
-            * @param [out] pErrorCode A pointer to an integer to receive the error code, if any. Defaults to NULL.
-            *
-            * @return Returns a pointer to a CImageData object representing the image if successful, or nullptr if an error occurs.
-            * @remarks If the file format is gif, pdf or tiff, we read the first page of the image file.The caller is responsible for freeing the memory allocated for the image.
-            */
-            CImageData* ReadFromBase64String(const char* base64String, int* pErrorCode = NULL);
+
+			/**
+			* Reads an image from a Base64-encoded string.
+			*
+			* @param [in] base64String A null-terminated string containing the Base64-encoded image data.
+			* @param [out] pErrorCode A pointer to an integer to receive the error code, if any. Defaults to NULL.
+			*
+			* @return Returns a pointer to a CImageData object representing the image if successful, or nullptr if an error occurs.
+			* @remarks If the file format is gif, pdf or tiff, we read the first page of the image file.The caller is responsible for freeing the memory allocated for the image.
+			*/
+			CImageData* ReadFromBase64String(const char* base64String, int* pErrorCode = NULL);
 
 
-            /**
-            * Saves an image to a Base64-encoded string.
-            *
-            * @param [in] pImageData A pointer to the image data to be saved.
-            * @param [in] imageFormat The image file format to be saved.
-            * @param [out] base64String A pointer to a char* that will hold the Base64-encoded string.
-            *
-            * @return Returns an integer indicating the success of the operation. 0 indicates success, while a non-zero value indicates an error occurred.
-            * @remarks The caller is responsible for freeing the memory allocated for the Base64-encoded string.
-            */
-            int SaveToBase64String(const CImageData* pImageData, ImageFileFormat imageFormat, char** base64String);
+			/**
+			* Saves an image to a Base64-encoded string.
+			*
+			* @param [in] pImageData A pointer to the image data to be saved.
+			* @param [in] imageFormat The image file format to be saved.
+			* @param [out] base64String A pointer to a char* that will hold the Base64-encoded string.
+			*
+			* @return Returns an integer indicating the success of the operation. 0 indicates success, while a non-zero value indicates an error occurred.
+			* @remarks The caller is responsible for freeing the memory allocated for the Base64-encoded string.
+			*/
+			int SaveToBase64String(const CImageData* pImageData, ImageFileFormat imageFormat, char** base64String);
 		};
 
 		class UTIL_API CImageDrawer {
@@ -597,6 +597,7 @@ namespace dynamsoft {
 			 * @return: Image after binarization.
 			 */
 			CImageData* ConvertToBinaryLocal(const CImageData* pImageData, int blockSize = 0, int compensation = 0, bool invert = false);
+
 		};
 #pragma pack(pop)
 	}
