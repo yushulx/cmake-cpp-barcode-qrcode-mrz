@@ -1,30 +1,24 @@
 #pragma once
 
 #if !defined(_WIN32) && !defined(_WIN64)
-
-#ifdef __EMSCRIPTEN__
-#define DBR_API __attribute__((used))
-#else
 #define DBR_API __attribute__((visibility("default")))
-#endif
-
-#ifdef __APPLE__
-#else
+#if !defined(__APPLE__)
 typedef signed char BOOL;
 #endif
 typedef void* HANDLE;
 #include <stddef.h>
-#else
-#ifdef DBR_EXPORTS
+#else //windows
+#if defined(DBR_EXPORTS)
 #define DBR_API __declspec(dllexport)
 #else
 #define DBR_API __declspec(dllimport)
 #endif
 #include <windows.h>
 #endif
+
 #include "DynamsoftCore.h"
 
-#define DBR_VERSION "10.0.0.629"
+#define DBR_VERSION "11.2.50.6558"
 
 /**Enumeration section*/
 
@@ -39,12 +33,12 @@ enum BarcodeFormat : unsigned long long
 	BF_NULL = 0x00,
 
 	/**All supported formats in BarcodeFormat*/
-	BF_ALL = 0xFFFFFFFFFFFFFFFF,
+	BF_ALL = 0xFFFFFFFEFFFFFFFF,
 
 	/**Use the default barcode format settings*/
-	BF_DEFAULT = 0xFE3FFFFF,
+	BF_DEFAULT = 0xFE3BFFFF,
 
-	/**Combined value of BF_CODABAR, BF_CODE_128, BF_CODE_39, BF_CODE_39_Extended, BF_CODE_93, BF_EAN_13, BF_EAN_8, INDUSTRIAL_25, BF_ITF, BF_UPC_A, BF_UPC_E, BF_MSI_CODE;  */
+	/**Combined value of BF_CODABAR, BF_CODE_128, BF_CODE_39, BF_CODE_39_Extended, BF_CODE_93, BF_EAN_13, BF_EAN_8, INDUSTRIAL_25, BF_ITF, BF_UPC_A, BF_UPC_E, BF_MSI_CODE, BF_CODE_11;  */
 	BF_ONED = 0x003007FF,
 
 	/**Combined value of BF_GS1_DATABAR_OMNIDIRECTIONAL, BF_GS1_DATABAR_TRUNCATED, BF_GS1_DATABAR_STACKED, BF_GS1_DATABAR_STACKED_OMNIDIRECTIONAL, BF_GS1_DATABAR_EXPANDED, BF_GS1_DATABAR_EXPANDED_STACKED, BF_GS1_DATABAR_LIMITED*/
@@ -148,8 +142,21 @@ enum BarcodeFormat : unsigned long long
 
 	/*Matrix 25*/
 	BF_MATRIX_25 = 0x1000000000,
+	
+	/**
+	 * Telepen barcode format.
+	 * Designed primarily for library and membership systems, it can encode
+	 * the full ASCII character set, offering a high-density barcode solution.
+	 */
+	BF_TELEPEN = 0x2000000000,
 
-	/**Combined value of BF2_USPSINTELLIGENTMAIL, BF2_POSTNET, BF2_PLANET, BF2_AUSTRALIANPOST, BF2_RM4SCC.*/
+	/**
+	 * Telepen Numeric barcode format.
+	 * A variation of the Telepen format optimized for encoding numeric data only.
+	 */
+	BF_TELEPEN_NUMERIC = 0x4000000000,
+
+	/**Combined value of BF_USPSINTELLIGENTMAIL, BF_POSTNET, BF_PLANET, BF_AUSTRALIANPOST, BF_RM4SCC, BF_KIX.*/
 	BF_POSTALCODE = 0x3F0000000000000,
 
 	/**Nonstandard barcode */
@@ -220,11 +227,18 @@ typedef enum LocalizationMode
 	/**Localizes 1D barcodes fast. Check @ref LM for available argument settings. */
 	LM_ONED_FAST_SCAN = 0x100,
 
+	/** Localizes barcodes by utilizing a neural network model. */
+	LM_NEURAL_NETWORK = 0X200,
+
 	/**Reserved setting for localization mode.*/
 #if defined(_WIN32) || defined(_WIN64)
 	LM_REV = 0x80000000,
+	/**Placeholder value with no functional meaning.*/
+	LM_END = 0xFFFFFFFF,
 #else
 	LM_REV = -2147483648,
+	/**Placeholder value with no functional meaning.*/
+	LM_END = -1,
 #endif
 
 	/**Skips localization. */
@@ -266,13 +280,19 @@ typedef enum DeblurMode
 	/**Performs deblur process using the sharpening and smoothing algorithm.*/
 	DM_SHARPENING_SMOOTHING = 0x100,
 
+	// add in v11.0.10
+	/**Performs deblur process by utilizing a neural network model. */
+	DM_NEURAL_NETWORK = 0x200,
+
 	/**Reserved setting for deblur mode.*/
 #if defined(_WIN32) || defined(_WIN64)
 	DM_REV = 0x80000000,
+	/**Placeholder value with no functional meaning.*/
+	DM_END = 0xFFFFFFFF,
 #else
 	DM_REV = -2147483648,
+	DM_END = -1,
 #endif
-
 	/**Skips the deblur process.*/
 	DM_SKIP = 0x00
 }DeblurMode;
@@ -319,12 +339,12 @@ typedef enum ExtendedBarcodeResultType
 /**Structures section*/
 
 #pragma pack(push)
-#pragma pack(1)
+#pragma pack(4)
 
 /**
 * The SimplifiedBarcodeReaderSettings struct contains settings for barcode decoding. It is a sub-parameter of SimplifiedCaptureVisionSettings.
 */
-typedef struct tagSimplifiedBarcodeReaderSettings 
+typedef struct tagSimplifiedBarcodeReaderSettings
 {
 	/**Input a combined value of enumeration BarcodeFormat to specify the targeting barcode formats.*/
 	unsigned long long barcodeFormatIds;
@@ -362,8 +382,13 @@ typedef struct tagSimplifiedBarcodeReaderSettings
 	/**Set the maximum available threads count in one barcode decoding task.*/
 	int maxThreadsInOneTask;
 
+	/**Set the threshold for image shrinking. If the shorter edge size exceeds the specified threshold value, 
+	* the library will calculate the resized height and width of the image and and perform shrinking.
+	*/
+	int scaleDownThreshold;
+
 	/**Reserved for future use.*/
-	char reserved[512];
+	char reserved[508];
 }SimplifiedBarcodeReaderSettings;
 
 #pragma pack(pop)
@@ -378,6 +403,8 @@ namespace dynamsoft
 {
 	namespace dbr
 	{
+#pragma pack(push)
+#pragma pack(4)
 		/**
 		 * The `CBarcodeDetails` class represents the details of a barcode. It is an abstract base class.
 		 *
@@ -462,6 +489,13 @@ namespace dynamsoft
 			CQRCodeDetails(int _rows = -1, int _columns = -1, QRCodeErrorCorrectionLevel _level = QRECL_ERROR_CORRECTION_H,
 				int _version = -1, int _model = -1, int _mode = -1, int _page = -1, int _totalPage = -1, int _parityData = -1);
 
+			CQRCodeDetails& operator=(const CQRCodeDetails& other);
+
+			/**
+			 * Destructor for the CQRCodeDetails class.
+			 */
+			~CQRCodeDetails();
+
 			/*The row count of the barcode*/
 			int rows;
 
@@ -490,6 +524,12 @@ namespace dynamsoft
 			The parity data is a value obtained by XORing byte by byte the ASCII/JIS values of 
 			all the original input data before division into symbol blocks.*/
 			unsigned char parityData;
+
+			int dataMaskPattern;
+
+			unsigned char* codewords;
+
+			int codewordsCount;
 		};
 
 		/**
@@ -501,6 +541,13 @@ namespace dynamsoft
 		public:
 			CPDF417Details(int _rows = -1, int _columns = -1, int _level = -1,
 				int _hasLeftRowIndicator = -1, int _hasRightRowIndicator = -1);
+
+			CPDF417Details& operator=(const CPDF417Details& other);
+
+			/**
+			 * Destructor for the CPDF417Details class.
+			 */
+			~CPDF417Details();
 
 			/*The row count of the barcode*/
 			int rows;
@@ -516,6 +563,10 @@ namespace dynamsoft
 
 			/*Whether the right row indicator of the PDF417 code exists*/
 			int hasRightRowIndicator;
+
+			unsigned int * codewords;
+
+			int codewordsCount;
 		};
 		
 		/**
@@ -571,12 +622,13 @@ namespace dynamsoft
 			 */
 			class DBR_API CLocalizedBarcodeElement : public CRegionObjectElement
 			{
-			public:
+			protected:
 				/**
 				 * Destructor
 				 */
 				virtual ~CLocalizedBarcodeElement() {};
 
+			public:
 				/**
 				 * Gets the format of the barcode.
 				 *
@@ -616,6 +668,22 @@ namespace dynamsoft
 				 *
 				 */
 				virtual int GetConfidence() const = 0;
+
+				/**
+				 * Sets the possible formats of the barcode.
+				 *
+				 * @param [in] possibleFormats The possible formats of the barcode.
+				 *
+				 */
+				virtual void SetPossibleFormats(unsigned long long possibleFormats) = 0;
+
+				/**
+				 * Sets the location of the localized barcode element.
+				 *
+				 * @param location The location of the localized barcode element.
+				 * @return Returns 0 if success, otherwise an error code.
+				 */
+				virtual int SetLocation(const CQuadrilateral& location) = 0;
 			};
 
 			class DBR_API CExtendedBarcodeResult;
@@ -625,12 +693,13 @@ namespace dynamsoft
 			 */
 			class DBR_API CDecodedBarcodeElement : public CRegionObjectElement
 			{
-			public:
+			protected:
 				/**
 				 * Destructor
 				 */
 				virtual ~CDecodedBarcodeElement() {};
 
+			public:
 				/**
 				 * Gets the format of the barcode.
 				 *
@@ -737,6 +806,46 @@ namespace dynamsoft
 				 *
 				 */
 				virtual const CExtendedBarcodeResult* GetExtendedBarcodeResult(int index) const = 0;
+
+				/**
+				 * Sets the format of the barcode.
+				 *
+				 * @param [in] format The format of the barcode.
+				 *
+				*/
+				virtual void SetFormat(BarcodeFormat format) = 0;
+
+				/**
+				 * Sets the text of the barcode.
+				 *
+				 * @param text The text of the barcode.
+				 */
+				virtual void SetText(const char* text) = 0;
+
+				/**
+				 * Sets the raw bytes of the decoded barcode.
+				 *
+				 * @param [in] bytes The raw bytes of the decoded barcode.
+				 * @param [in] bytesLength The length of the raw bytes of the decoded barcode.
+				 *
+				 */
+				virtual void SetBytes(unsigned char* bytes, int bytesLength) = 0;
+
+				/**
+				 * Sets the confidence of the decoded barcode.
+				 *
+				 * @param confidence The confidence of the decoded barcode.
+				 *
+				 */
+				virtual void SetConfidence(int confidence) = 0;
+
+				/**
+				 * Sets the location of the decoded barcode element.
+				 *
+				 * @param location The location of the decoded barcode element.
+				 * @return Returns 0 if success, otherwise an error code.
+				 */
+				virtual int SetLocation(const CQuadrilateral& location) = 0;
 			};
 
 			/**
@@ -745,6 +854,12 @@ namespace dynamsoft
 			 */
 			class DBR_API CExtendedBarcodeResult : public CDecodedBarcodeElement
 			{
+			protected:
+				/**
+				 * Destructor
+				 */
+				virtual ~CExtendedBarcodeResult() {};
+
 			public:
 				/**
 				 * Gets the type of extended barcode result.
@@ -780,19 +895,78 @@ namespace dynamsoft
 			};
 
 			/**
+			 * Represents a candidate zone for barcode detection.
+			 *
+			 */
+			class DBR_API CCandidateBarcodeZone
+			{
+			private:
+				CQuadrilateral location;
+				unsigned long long barcodeFormats;
+
+			public:
+				/**
+				 * Default Constructor
+				 */
+				CCandidateBarcodeZone();
+
+				/**
+				 * Constructor
+				 *
+				 * @param [in] location The location of the candidate barcode.
+				 * @param [in] possibleFormats The posssible formats of the candidate barcode.
+				 *
+				 */
+				CCandidateBarcodeZone(const CQuadrilateral& location, unsigned long long possibleFormats);
+
+				/**
+				 * Gets the location of the candidate barcode.
+				 *
+				 * @return Returns the location of the candidate barcode.
+				 *
+				 */
+				CQuadrilateral GetLocation() const;
+
+				/**
+				 * Sets the location of the candidate barcode.
+				 *
+				 * @param [in] loc The location of the candidate barcode.
+				 *
+				 */
+				void SetLocation(const CQuadrilateral& loc);
+
+				/**
+				 * Gets the posssible formats of the candidate barcode.
+				 *
+				 * @return Returns the posssible formats of the candidate barcode.
+				 *
+				 */
+				unsigned long long GetPossibleFormats() const;
+
+				/**
+				 * Sets the posssible formats of the candidate barcode.
+				 *
+				 * @param [in] formats The posssible formats of the candidate barcode.
+				 *
+				 */
+				void SetPossibleFormats(unsigned long long formats);
+			};
+
+			/**
 			 * The `CCandidateBarcodeZonesUnit` class represents a unit that contains candidate barcode zones unit. It inherits from the `CIntermediateResultUnit` class.
 			 *
 			 */
 			class DBR_API CCandidateBarcodeZonesUnit : public CIntermediateResultUnit
 			{
-			public:
+			protected:
 				/**
 				 * Destructor
 				 */
 				virtual ~CCandidateBarcodeZonesUnit() {};
 
+			public:
 				/**
-				 * Gets the number of localized barcodes in the unit.
+				 * Gets the number of candidate barcode zones in the unit.
 				 *
 				 * @return Returns the number of candidate barcode zones in the unit.
 				 *
@@ -800,15 +974,51 @@ namespace dynamsoft
 				virtual int GetCount() const = 0;
 
 				/**
-				 * Gets a pointer to a specific candidate barcode zone element.
+				 * Gets a pointer to a specific candidate barcode zone.
 				 *
-				 * @param [in] index The index of the candidate barcode zone element.
-				 * @param [out] quad The quadrilateral of the candidate barcode zone element.
+				 * @param [in] index The index of the candidate barcode zone.
+				 * @param [out] barcodeZone The pointer to the candidate barcode zone.
 				 *
 				 * @return Returns 0 if successful, otherwise returns a negative value.
 				 *
 				 */
-				virtual int GetCandidateBarcodeZone(int index, CQuadrilateral* quad) const = 0;
+				virtual int GetCandidateBarcodeZone(int index, CCandidateBarcodeZone* barcodeZone) const = 0;
+
+				/**
+				 * Removes all the candidate barcode zones.
+				 */
+				virtual void RemoveAllCandidateBarcodeZones() = 0;
+
+				/**
+				 * Removes a candidate barcode zone at the specified index.
+				 *
+				 * @param index The index of the candidate barcode zone.
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 */
+				virtual int RemoveCandidateBarcodeZone(int index) = 0;
+
+				/**
+				 * Adds a candidate barcode zone.
+				 *
+				 * @param [in] barcodeZone The candidate barcode zone.
+				 * @param [in] matrixToOriginalImage The matrix to original image.
+				 *
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 *
+				 */
+				virtual int AddCandidateBarcodeZone(const CCandidateBarcodeZone& barcodeZone, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
+
+				/**
+				 * Sets a candidate barcode zone at the specified index.
+				 *
+				 * @param [in] index The index of the candidate barcode zone.
+				 * @param [in] barcodeZone The candidate barcode zone.
+				 * @param [in] matrixToOriginalImage The matrix to original image.
+				 *
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 *
+				 */
+				virtual int SetCandidateBarcodeZone(int index, const CCandidateBarcodeZone& barcodeZone, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
 			};
 
 			/**
@@ -817,12 +1027,13 @@ namespace dynamsoft
 			 */
 			class DBR_API CLocalizedBarcodesUnit : public CIntermediateResultUnit
 			{
-			public:
+			protected:
 				/**
 				 * Destructor
 				 */
 				virtual ~CLocalizedBarcodesUnit() {};
 
+			public:
 				/**
 				 * Gets the number of localized barcodes in the unit.
 				 *
@@ -840,27 +1051,176 @@ namespace dynamsoft
 				 *
 				 */
 				virtual const CLocalizedBarcodeElement* GetLocalizedBarcode(int index) const = 0;
+
+				/**
+				 * Gets a pointer to a specific localized barcode element.
+				 *
+				 * @param [in] index The index of the localized barcode element to retrieve.
+				 *
+				 * @return Returns a const pointer to the localized barcode element at the specified index.
+				 *
+				 */
+				virtual const CLocalizedBarcodeElement* operator[](int index) const = 0;
+
+				/**
+				 * Removes all the localized barcodes.
+				 */
+				virtual void RemoveAllLocalizedBarcodes() = 0;
+
+				/**
+				 * Removes a localized barcode at the specified index.
+				 *
+				 * @param index The index of the localized barcode.
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 */
+				virtual int RemoveLocalizedBarcode(int index) = 0;
+
+				/**
+				 * Adds a localized barcode.
+				 *
+				 * @param element The localized barcode element.
+				 * @param matrixToOriginalImage The matrix to original image.
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 */
+				virtual int AddLocalizedBarcode(const CLocalizedBarcodeElement* element, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
+
+				/**
+				 * @brief Sets a localized barcode at the specified index.
+				 *
+				 * @param index The index of the localized barcode.
+				 * @param element The localized barcode element.
+				 * @param matrixToOriginalImage The matrix to original image.
+				 *
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 */
+				virtual int SetLocalizedBarcode(int index, const CLocalizedBarcodeElement* element, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
 			};
 
 			/**
-			 * The `CScaledUpBarcodeImageUnit` class represents a unit that contains scaled up barcode image. It inherits from the `CIntermediateResultUnit` class.
+			 * The `CScaledBarcodeImageUnit` class represents a unit that contains scaled barcode image. It inherits from the `CIntermediateResultUnit` class.
 			 *
 			 */
-			class DBR_API CScaledUpBarcodeImageUnit : public CIntermediateResultUnit
+			class DBR_API CScaledBarcodeImageUnit : public CIntermediateResultUnit
 			{
+			protected:
+				/**
+				 * Destructor
+				 */
+				virtual ~CScaledBarcodeImageUnit() {};
+
+			public:
+				/**
+				 * Gets the scaled barcode image data.
+				 *
+				 * @return Returns a pointer to the scaled image of the barcode.
+				 *
+				 */
+				virtual const CImageData* GetImageData() const = 0;
+
+				/**
+				 * @brief Sets the scaled image data.
+				 *
+				 * @param imgData The pointer to the scaled image data.
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 */
+				virtual int SetImageData(const CImageData* imgData) = 0;
+			};
+
+			typedef void(*FreeImageFunc)(const CImageData*);
+			/**
+			 * Represents a deformation resisted barcode.
+			 *
+			 */
+			class DBR_API CDeformationResistedBarcode
+			{
+			private:
+				const CImageData* image;
+				CQuadrilateral location;
+				BarcodeFormat format;
+				FreeImageFunc freeImageFunc;
+
 			public:
 				/**
 				 * Destructor
 				 */
-				virtual ~CScaledUpBarcodeImageUnit() {};
+				~CDeformationResistedBarcode();
 
 				/**
-				 * Gets the scaled up barcode image data.
-				 *
-				 * @return Returns a pointer to the scaled up image of the barcode.
-				 *
+				 * Default Constructor
 				 */
-				virtual const CImageData* GetImageData() const = 0;
+				CDeformationResistedBarcode();
+
+				/**
+				 * Move constructor for CDeformationResistedBarcode.
+				 *
+				 * @param barcode The rvalue reference to another CDeformationResistedBarcode object.
+				 */
+				CDeformationResistedBarcode(CDeformationResistedBarcode&& barcode);
+
+				/**
+				 * Move assignment operator for CDeformationResistedBarcode.
+				 *
+				 * @param barcode The rvalue reference to another CDeformationResistedBarcode object.
+				 * @return A reference to the moved CDeformationResistedBarcode object.
+				 */
+				CDeformationResistedBarcode& operator=(CDeformationResistedBarcode&& barcode);
+
+				/**
+				 * @brief Construct a new CDeformationResistedBarcode object
+				 *
+				 * @param img The pointer to the deformation resisted barcode image.
+				 * @param freeImageFunc The function pointer to free image.
+				 * @param location The location of the deformation resisted barcode.
+				 * @param format The format of the deformation resisted barcode.
+				 */
+				CDeformationResistedBarcode(const CImageData* img, FreeImageFunc freeImageFunc, const CQuadrilateral& location, BarcodeFormat format);
+
+				/**
+				 * Gets the deformation resisted barcode image.
+				 *
+				 * @return The pointer to the deformation resisted barcode image.
+				 */
+				const CImageData* GetImageData() const;
+
+				/**
+				 * Sets the deformation resisted barcode image.
+				 *
+				 * @param img The pointer to the deformation resisted barcode image.
+				 * @param freeImageFunc The function pointer to free image.
+				 */
+				void SetImageData(const CImageData* img, FreeImageFunc freeImageFunc);
+
+				/**
+				 * Gets the location of the deformation resisted barcode in the image.
+				 *
+				 * @return The location of the deformation resisted barcode.
+				 */
+				CQuadrilateral GetLocation() const;
+
+				/**
+				 * Sets the location of the deformation resisted barcode in the image.
+				 *
+				 * @param loc The location of the deformation resisted barcode.
+				 */
+				void SetLocation(const CQuadrilateral& loc);
+
+				/**
+				 * Gets the format of the deformation resisted barcode.
+				 *
+				 * @return The format of the deformation resisted barcode.
+				 */
+				BarcodeFormat GetFormat() const;
+
+				/**
+				 * Sets the format of the deformation resisted barcode.
+				 *
+				 * @param format The format of the deformation resisted barcode.
+				 */
+				void SetFormat(BarcodeFormat format);
+
+			private:
+				CDeformationResistedBarcode(const CDeformationResistedBarcode&);
+				CDeformationResistedBarcode& operator=(const CDeformationResistedBarcode&);
 			};
 
 			/**
@@ -869,19 +1229,29 @@ namespace dynamsoft
 			 */
 			class DBR_API CDeformationResistedBarcodeImageUnit : public CIntermediateResultUnit
 			{
-			public:
+			protected:
 				/**
 				 * Destructor
 				 */
 				virtual ~CDeformationResistedBarcodeImageUnit() {};
 
+			public:
 				/**
-				 * Gets the deformation resisted barcode image data.
+				 * @brief Gets the deformation resisted barcode object
 				 *
-				 * @return Returns a pointer to the deformation resisted barcode image data.
+				 * @return An instance of CDeformationResistedBarcode
+				 */
+				virtual CDeformationResistedBarcode GetDeformationResistedBarcode() const = 0;
+
+				/**
+				 * @brief Sets the deformation resisted barcode object
+				 *
+				 * @param barcode The deformation resisted barcode object
+				 * @param matrixToOriginalImage The matrix to original image.
+				 * @return Returns 0 if successful, otherwise returns a negative value.
 				 *
 				 */
-				virtual const CImageData* GetImageData() const = 0;
+				virtual int SetDeformationResistedBarcode(const CDeformationResistedBarcode& barcode, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
 			};
 
 			/**
@@ -890,12 +1260,13 @@ namespace dynamsoft
 			 */
 			class DBR_API CComplementedBarcodeImageUnit : public CIntermediateResultUnit
 			{
-			public:
+			protected:
 				/**
 				 * Destructor
 				 */
 				virtual ~CComplementedBarcodeImageUnit() {};
 
+			public:
 				/**
 				 * Gets the complemented barcode image data.
 				 *
@@ -911,6 +1282,15 @@ namespace dynamsoft
 				 *
 				 */
 				virtual CQuadrilateral GetLocation() const = 0;
+
+				/**
+				 * Sets the location of the complemented barcode
+				 *
+				 * @param location The location of the complemented barcode
+				 * @param matrixToOriginalImage The matrix to original image
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 */
+				virtual int SetLocation(const CQuadrilateral& location, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
 			};
 
 			/**
@@ -919,12 +1299,13 @@ namespace dynamsoft
 			 */
 			class DBR_API CDecodedBarcodesUnit : public CIntermediateResultUnit
 			{
-			public:
+			protected:
 				/**
 				 * Destructor
 				 */
 				virtual ~CDecodedBarcodesUnit() {};
 
+			public:
 				/**
 				 * Gets the number of decoded barcodes in the unit.
 				 *
@@ -942,6 +1323,33 @@ namespace dynamsoft
 				 *
 				 */
 				virtual const CDecodedBarcodeElement* GetDecodedBarcode(int index) const = 0;
+
+				/**
+				 * Gets a pointer to the CDecodedBarcodeElement object at the specified index.
+				 *
+				 * @param [in] index The index of the desired CDecodedBarcodeElement object.
+				 *
+				 * @return Returns a pointer to the CDecodedBarcodeElement object at the specified index.
+				 *
+				 */
+				virtual const CDecodedBarcodeElement* operator[](int index) const = 0;
+
+				/**
+				 * Removes all decoded barcodes in the unit.
+				 *
+				 */
+				virtual void RemoveAllDecodedBarcodes() = 0;
+
+				/**
+				 * Sets the decoded barcode.
+				 *
+				 * @param element The decoded barcode
+				 * @param matrixToOriginalImage The matrix to original image
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 */
+				virtual int SetDecodedBarcode(const CDecodedBarcodeElement* element, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
+
+				virtual int RemoveDecodedBarcode(int index) = 0;
 			};
 		}
 
@@ -950,12 +1358,13 @@ namespace dynamsoft
 		 */
 		class DBR_API CBarcodeResultItem : public CCapturedResultItem
 		{
-		public:
+		protected:
 			/**
 			 * Destructor
 			 */
 			virtual ~CBarcodeResultItem() {};
 
+		public:
 			/**
 			 * It is used to get the format of the decoded barcode result.
 			 *
@@ -1052,64 +1461,51 @@ namespace dynamsoft
 			 */
 			virtual bool IsMirrored() const = 0;
 
+			/**
+			 * Sets the location of the barcode item.
+			 *
+			 * @param [in] location The location of the barcode item.
+			 *
+			 * @return Returns 0 if success, otherwise an error code.
+			 *
+			 */
+			virtual int SetLocation(const CQuadrilateral& location) = 0;
+
 		};
 
 		/**
 		 * The `CDecodedBarcodesResult` class represents the result of a barcode reading process. It provides access to information about the decoded barcodes, the source image, and any errors that occurred during the barcode reading process.
 		 *
 		 */
-		class DBR_API CDecodedBarcodesResult 
+		class DBR_API CDecodedBarcodesResult : public CCapturedResultBase
 		{
-		public:
+		protected:
 			/**
 			 * Destructor
 			 */
 			virtual ~CDecodedBarcodesResult() {};
 
-			/**
-			 * Gets the hash ID of the source image.
-			 *
-			 * @return Returns a pointer to a null-terminated string containing the hash ID of the source image.
-			 *
-			 */
-			virtual const char* GetSourceImageHashId()const = 0;
-
-			/**
-			 * Gets the tag of the source image.
-			 *
-			 * @return Returns a pointer to a CImageTag object representing the tag of the source image.
-			 *
-			 */
-			virtual const CImageTag* GetSourceImageTag()const = 0;
-
-			/**
-			 * Get the rotation transformation matrix of the original image relative to the rotated image.
-			 *
-			 * @param [out] matrix A double array which represents the rotation transform matrix.
-			 *
-			 */
-			virtual void GetRotationTransformMatrix(double matrix[9]) const = 0;
-
+		public:
 			/**
 			 * Gets the number of decoded barcode items in the barcode reading result.
 			 *
 			 * @return Returns the number of decoded barcode items in the barcode reading result.
 			 *
 			 */
-			virtual int GetCount()const = 0;
+			virtual int GetItemsCount()const = 0;
 
 			/**
 			 * Gets the decoded barcode result item at the specified index.
 			 *
-			 * @param [in] index The zero-based index of the text line result item to retrieve.
+			 * @param [in] index The zero-based index of the barcode result item to retrieve.
 			 *
-			 * @return Returns a pointer to the CDecodedBarcodesResult object at the specified index.
+			 * @return Returns a pointer to the CBarcodeResultItem object at the specified index.
 			 *
 			 */
 			virtual const CBarcodeResultItem* GetItem(int index) const = 0;
 
 			/**
-			 * Remove a specific item from the array in the barcodes.
+			 * Removes a specific item from the array in the barcodes.
 			 *
 			 * @param [in] item The specific item to remove.
 			 *
@@ -1119,7 +1515,7 @@ namespace dynamsoft
 			virtual int RemoveItem(const CBarcodeResultItem* item) = 0;
 
 			/**
-			 * Check if the item is present in the array.
+			 * Checks if the item is present in the array.
 			 *
 			 * @param [in] item The specific item to check.
 			 *
@@ -1129,20 +1525,37 @@ namespace dynamsoft
 			virtual bool HasItem(const CBarcodeResultItem* item) const = 0;
 
 			/**
-			 * Gets the error code of the barcode reading result, if an error occurred.
+			 * Gets the decoded barcode result item at the specified index.
 			 *
-			 * @return Returns the error code of the barcode reading result, or 0 if no error occurred.
+			 * @param [in] index The zero-based index of the barcode result item to retrieve.
+			 *
+			 * @return Returns a pointer to the CBarcodeResultItem object at the specified index.
 			 *
 			 */
-			virtual int GetErrorCode()const = 0;
+			virtual const CBarcodeResultItem* operator[](int index) const = 0;
 
 			/**
-			 * Gets the error message of the barcode reading result, if an error occurred.
+			 * Increases the reference count of the CDecodedBarcodesResult object.
 			 *
-			 * @return Returns a pointer to a null-terminated string containing the error message of the barcode reading result, or a pointer to an empty string if no error occurred.
+			 * @return An object of CDecodedBarcodesResult.
+			 */
+			virtual CDecodedBarcodesResult* Retain() = 0;
+
+			/**
+			* Decreases the reference count of the CDecodedBarcodesResult object.
+			*
+			*/
+			virtual void Release() = 0;
+
+			/**
+			 * Adds a specific item to the array in the decoded barcodes result.
+			 *
+			 * @param [in] item The specific item to add.
+			 *
+			 * @return Returns value indicating whether the addition was successful or not.
 			 *
 			 */
-			virtual const char* GetErrorString()const = 0;
+			virtual int AddItem(const CBarcodeResultItem* item) = 0;
 		};
 
 		/**
@@ -1157,8 +1570,22 @@ namespace dynamsoft
 			 * @return Returns a const char pointer representing the version of the barcode reader module.
 			 */
 			static const char* GetVersion();
-		};
 
+			/**
+			 * Creates a Decoded Barcode Element object.
+			 *
+			 * @return An object of CDecodedBarcodeElement
+			 */
+			static intermediate_results::CDecodedBarcodeElement* CreateDecodedBarcodeElement();
+
+			/**
+			 * Creates a Localized Barcode Element object.
+			 *
+			 * @return An object of CLocalizedBarcodeElement
+			 */
+			static intermediate_results::CLocalizedBarcodeElement* CreateLocalizedBarcodeElement();
+		};
+#pragma pack(pop)
 	}
 }
 #endif

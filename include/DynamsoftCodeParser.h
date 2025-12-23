@@ -2,16 +2,16 @@
 
 #if !defined(_WIN32) && !defined(_WIN64)
 #define DCP_API __attribute__((visibility("default")))
-#else
-#ifdef DCP_EXPORTS
+#else //windows
+#if defined(DCP_EXPORTS)
 #define DCP_API __declspec(dllexport)
 #else
-#define DCP_API
+#define DCP_API __declspec(dllimport)
 #endif
 #endif
 #include "DynamsoftCore.h"
 
-#define DCP_VERSION "2.0.0.629"
+#define DCP_VERSION "3.2.50.6520"
 /**
  * @enum MappingStatus 
  *
@@ -46,10 +46,8 @@ typedef enum ValidationStatus
 	VS_FAILED
 } ValidationStatus;
 
-#pragma pack(push)
-#pragma pack(1)
 
-#pragma pack(pop)
+
 
 #ifdef __cplusplus
 using namespace dynamsoft::basic_structures;
@@ -58,15 +56,39 @@ namespace dynamsoft
 {
 	namespace dcp
 	{
-		class DCP_API CParsedResultItem : public CCapturedResultItem
+#pragma pack(push)
+#pragma pack(4)
+		class CCodeType
 		{
 		public:
+			DCP_API static const char*  CT_MRTD_TD1_ID;					//"MRTD_TD1_ID"
+			DCP_API static const char*  CT_MRTD_TD2_ID;					//"MRTD_TD2_ID"
+			DCP_API static const char*  CT_MRTD_TD2_VISA;				//"MRTD_TD2_VISA"
+			DCP_API static const char*  CT_MRTD_TD3_PASSPORT;			//"MRTD_TD3_PASSPORT"
+			DCP_API static const char*  CT_MRTD_TD3_VISA;				//"MRTD_TD3_VISA"
+			DCP_API static const char*  CT_MRTD_TD2_FRENCH_ID;			//"MRTD_TD2_FRENCH_ID"
+			DCP_API static const char*  CT_AAMVA_DL_ID;					//"AAMVA_DL_ID"
+			DCP_API static const char*  CT_AAMVA_DL_ID_WITH_MAG_STRIPE;	//"AAMVA_DL_ID_WITH_MAG_STRIPE"
+			DCP_API static const char*  CT_SOUTH_AFRICA_DL;				//"SOUTH_AFRICA_DL"
+			DCP_API static const char*  CT_AADHAAR;						//"AADHAAR"
+			DCP_API static const char*  CT_VIN;							//"VIN"
+			DCP_API static const char*  CT_GS1_AI;						//"GS1_AI"
+		};
+		
+		/**
+		 * The `CParsedResultItem` class represents a item parsed by code parser sdk. It is derived from `CCapturedResultItem`.
+		 *
+		 */
+		class DCP_API CParsedResultItem : public CCapturedResultItem
+		{
+		protected:
 			/**
 			 * Destructor.
 			 * 
 			 */
 			virtual ~CParsedResultItem() {};
 
+		public:
 			/**
 			 * Gets the parsed result as a JSON formatted string.
 			 * 
@@ -112,53 +134,71 @@ namespace dynamsoft
 			 * 
 			 */
 			virtual ValidationStatus GetFieldValidationStatus(const char* fieldName) const = 0;
+
+			/**
+			* Gets the raw string of a specified field from the parsed result.
+			*
+			* @param [in] fieldName The name of the field.
+			*
+			* @return Returns a string representing the specified field raw string.
+			*
+			*/
+			virtual const char* GetFieldRawValue(const char* fieldName) const = 0;
+
+			/**
+			* Gets the total number of parsed fields.
+			*
+			* @return Returns an integer representing the count of parsed fields.
+			*
+			*/
+			virtual int GetFieldCount() const = 0;
+
+			/**
+			* Gets the name of a specific parsed field by its index.
+			*
+			* @param [in] index The index of the parsed field.
+			*
+			* @return Returns a string representing the specified field name. If the field is nested, the name includes all parent fields, separated by a dot (.).
+			* The format follows this pattern: <root_field>[.<child_field1>[.<child_field2>...]]
+			*
+			*/
+			virtual const char* GetFieldName(int index) const = 0;
 		};
 
-		class DCP_API CParsedResult
+		/**
+		 * The `CParsedResult` class represents the result of code parsing process. It provides access to information about the parsed items, the source image, and any errors that occurred during the process.
+		 *
+		 */
+		class DCP_API CParsedResult : public CCapturedResultBase
 		{
-		public:
+		protected:
 			/**
 			 * Destructor.
 			 * 
 			 */
 			virtual ~CParsedResult() {};
 
+		public:
 			/**
-			 * Gets the hash ID of the source image.
+			 * Gets the number of parsed result items in the parsed result.
 			 * 
-			 * @return Returns a pointer to a null-terminated string containing the hash ID of the source image.
+			 * @return Returns the number of parsed result items in the parsed result.
 			 * 
 			 */
-			virtual const char* GetSourceImageHashId()const = 0;
-
+			virtual int GetItemsCount()const = 0;
+			 
 			/**
-			 * Gets the tag of the source image.
+			 * Gets the parsed result item at the specified index.
 			 * 
-			 * @return Returns a pointer to a CImageTag object representing the tag of the source image.
+			 * @param [in] index The zero-based index of the parsed result item to retrieve.
 			 * 
-			 */
-			virtual const CImageTag* GetSourceImageTag()const = 0;
-
-			/**
-			 * Gets the number of decoded barcode items in the barcode reading result.
-			 * 
-			 * @return Returns the number of decoded barcode items in the barcode reading result.
-			 * 
-			 */
-			virtual int GetCount()const = 0;
-
-			/**
-			 * Gets the decoded barcode result item at the specified index.
-			 * 
-			 * @param [in] index The zero-based index of the barcode result item to retrieve.
-			 * 
-			 * @return Returns a pointer to the CDecodedBarcodesResult object at the specified index.
+			 * @return Returns a pointer to the CParsedResultItem object at the specified index.
 			 * 
 			 */
 			virtual const CParsedResultItem* GetItem(int index)const = 0;
 
 			/**
-			 * Remove a specific item from the array in the normalized images.
+			 * Remove a specific item from the array in the parsed results.
 			 * 
 			 * @param [in] item The specific item to remove.
 			 * 
@@ -178,24 +218,45 @@ namespace dynamsoft
 			virtual bool HasItem(const CParsedResultItem* item) const = 0;
 
 			/**
-			 * Gets the error code of the barcode reading result, if an error occurred.
-			 * 
-			 * @return Returns the error code of the barcode reading result, or 0 if no error occurred.
-			 * 
+			 * Gets the parsed result item at the specified index.
+			 *
+			 * @param [in] index The zero-based index of the parsed result item to retrieve.
+			 *
+			 * @return Returns a pointer to the CParsedResultItem object at the specified index.
+			 *
 			 */
-			virtual int GetErrorCode()const = 0;
+			virtual const CParsedResultItem* operator[](int index) const = 0;
 
 			/**
-			 * Gets the error message of the barcode reading result, if an error occurred.
-			 * 
-			 * @return Returns a pointer to a null-terminated string containing the error message of the barcode reading result, or a pointer to an empty string if no error occurred.
-			 * 
+			 * Increases the reference count of the CParsedResult object.
+			 *
+			 * @return An object of CParsedResult.
 			 */
-			virtual const char* GetErrorString()const = 0;
+			virtual CParsedResult* Retain() = 0;
+
+			/**
+			* Decreases the reference count of the CParsedResult object.
+			*
+			*/
+			virtual void Release() = 0;
+
+			/**
+			 * Adds a specific item to the array in the parsed result.
+			 *
+			 * @param [in] item The specific item to add.
+			 *
+			 * @return Returns value indicating whether the addition was successful or not.
+			 *
+			 */
+			virtual int AddItem(const CParsedResultItem* item) = 0;
 		};
 
 		class CodeParserInner;
 
+		/**
+		 * The `CCodeParser` class provides methods for parsing code data for human-readable results.
+		 *
+		 */
 		class DCP_API CCodeParser
 		{
 		protected:
@@ -260,6 +321,9 @@ namespace dynamsoft
 			CCodeParser& operator=(const CCodeParser& r);
 		};
 
+		/**
+		 * The CCodeParserModule class defines general functions in the code parser  module.
+		 */
 		class DCP_API CCodeParserModule
 		{
 		public:
@@ -271,6 +335,8 @@ namespace dynamsoft
 			 */
 			static const char* GetVersion();
 		};
+
+#pragma pack(pop)
 	}
 }
 #endif

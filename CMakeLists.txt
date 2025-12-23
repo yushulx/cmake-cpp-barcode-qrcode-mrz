@@ -69,6 +69,9 @@ elseif(MACOS)
 endif()
 include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/include/")
 
+# Add bridge project
+add_subdirectory(bridge)
+
 # Add the executable
 add_executable(${PROJECT_NAME} BarcodeReader.cxx)
 if(WINDOWS)

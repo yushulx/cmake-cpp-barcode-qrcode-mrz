@@ -5,11 +5,14 @@
 #include <string>
 
 #include "DynamsoftCaptureVisionRouter.h"
+#include "DynamsoftUtility.h"
 
 using namespace std;
 using namespace dynamsoft::license;
 using namespace dynamsoft::cvr;
 using namespace dynamsoft::dbr;
+using namespace dynamsoft::utility;
+using namespace dynamsoft::basic_structures;
 
 #define C_API __declspec(dllexport)
 typedef struct

@@ -28,7 +28,7 @@ C_API void DBR_DestroyInstance(void *barcodeReader)
 
         if (reader->result != NULL)
         {
-            delete reader->result;
+            reader->result->Release();
             reader->result = NULL;
         }
 
@@ -44,12 +44,19 @@ C_API int DBR_DecodeFile(void *barcodeReader, const char *pFileName, const char 
         return -1;
 
     CCapturedResult *result = reader->cvr->Capture(pFileName, CPresetTemplate::PT_READ_BARCODES);
+    if (result == NULL)
+        return -1;
+
     int errorCode = result->GetErrorCode();
-    if (result->GetErrorCode() != 0)
+    if (errorCode != 0)
     {
-        cout << "Error: " << result->GetErrorCode() << "," << result->GetErrorString() << endl;
+        cout << "Error: " << errorCode << "," << result->GetErrorString() << endl;
     }
 
+    if (reader->result != NULL)
+    {
+        reader->result->Release();
+    }
     reader->result = result;
 
     return errorCode;
@@ -68,7 +75,7 @@ C_API int DBR_GetAllTextResults(void *barcodeReader, TextResultArray **pResults)
 
     CCapturedResult *result = reader->result;
 
-    int capturedResultItemCount = result->GetCount();
+    int capturedResultItemCount = result->GetItemsCount();
     if (capturedResultItemCount == 0)
         return -1;
 
@@ -96,7 +103,7 @@ C_API int DBR_GetAllTextResults(void *barcodeReader, TextResultArray **pResults)
         }
     }
 
-    delete result;
+    result->Release();
     reader->result = NULL;
 
     return 0;
