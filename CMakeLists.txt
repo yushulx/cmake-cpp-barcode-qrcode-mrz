@@ -91,6 +91,18 @@ if(WINDOWS)
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${PROJECT_SOURCE_DIR}/platforms/win/bin/"      
     $<TARGET_FILE_DIR:BarcodeReader>)
+
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:BarcodeReader>/Templates
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${PROJECT_SOURCE_DIR}/resource/Templates"
+    $<TARGET_FILE_DIR:BarcodeReader>/Templates)
+
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:BarcodeReader>/Models
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${PROJECT_SOURCE_DIR}/resource/Models"
+    $<TARGET_FILE_DIR:BarcodeReader>/Models)
 endif()
 
 # Set installation directory

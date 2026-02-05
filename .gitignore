@@ -2,3 +2,5 @@
 /.vscode
 /dist
 build
+Debug
+.vs
