@@ -90,3 +90,6 @@ Get a trial license here:
 - `test.pdf`
 
 You can use these files to quickly validate decoding.
+
+## Blog
+[Building a Cross-platform Command-line Barcode and QR Code Reader in C++](https://www.dynamsoft.com/codepool/desktop-cpp-barcode-qrcode-sdk.html)
