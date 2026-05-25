@@ -1,9 +1,10 @@
 /*
  * Barcode Benchmark: Dynamsoft Capture Vision vs zxing-cpp
  *
- * Usage: benchmark <image_or_folder> [iterations]
+ * Usage: benchmark [--threads N] <image_or_folder> [iterations]
  *   image_or_folder : path to a single image file or a directory of images
  *   iterations      : number of decoding passes per image (default: 10)
+ *   --threads N     : run multi-threaded throughput benchmark with N threads
  */
 
 #include <iostream>
@@ -16,6 +17,9 @@
 #include <cstdio>
 #include <cstring>
 #include <numeric>
+#include <thread>
+#include <mutex>
+#include <atomic>
 
 // Prevent Windows macros from conflicting with std::min/std::max
 #ifdef _WIN32
@@ -195,6 +199,143 @@ static BenchResult benchZXing(const string& filePath, int iterations)
 }
 
 // ---------------------------------------------------------------------------
+// Multi-threading types
+// ---------------------------------------------------------------------------
+struct MultiThreadResult
+{
+    string  libraryName;
+    int     totalBarcodes  = 0;
+    double  wallTimeSec    = 0.0;
+    double  throughput     = 0.0;
+    int     totalDecodes   = 0;
+};
+
+// ---------------------------------------------------------------------------
+// Dynamsoft multi-thread benchmark
+// ---------------------------------------------------------------------------
+static MultiThreadResult benchDynamsoftMulti(CCaptureVisionRouter* cvr,
+                                              const vector<string>& images,
+                                              int iterations, int numThreads)
+{
+    (void)cvr; // unused in this implementation (each thread creates its own router)
+    MultiThreadResult res;
+    res.libraryName = "Dynamsoft";
+
+    auto t0 = high_resolution_clock::now();
+    atomic<int> totalBarcodes{0};
+    vector<thread> workers;
+
+    for (int t = 0; t < numThreads; ++t)
+    {
+        workers.emplace_back([&, t]() {
+            CCaptureVisionRouter* localCvr = new CCaptureVisionRouter;
+            char err[512] = {0};
+            localCvr->InitSettingsFromFile("Templates/DBR-PresetTemplates.json", err, 512);
+
+            int localBc = 0;
+            for (size_t i = t; i < images.size(); i += numThreads)
+            {
+                for (int it = 0; it < iterations; ++it)
+                {
+                    CCapturedResultArray* arr = localCvr->CaptureMultiPages(
+                        images[i].c_str(), CPresetTemplate::PT_READ_BARCODES);
+
+                    int count = 0;
+                    int pageCount = arr->GetResultsCount();
+                    for (int p = 0; p < pageCount; ++p)
+                    {
+                        const CCapturedResult* r = arr->GetResult(p);
+                        if (r->GetErrorCode() != 0) continue;
+                        CDecodedBarcodesResult* br = r->GetDecodedBarcodesResult();
+                        if (br && br->GetErrorCode() == 0)
+                            count += br->GetItemsCount();
+                        if (br) br->Release();
+                    }
+                    arr->Release();
+                    if (it == 0) localBc = count;
+                }
+                totalBarcodes.fetch_add(localBc);
+            }
+            delete localCvr;
+        });
+    }
+    for (auto& w : workers) w.join();
+
+    auto t1 = high_resolution_clock::now();
+    res.wallTimeSec = duration_cast<microseconds>(t1 - t0).count() / 1e6;
+    res.totalBarcodes = totalBarcodes.load();
+    res.totalDecodes = static_cast<int>(images.size()) * iterations;
+    res.throughput = res.totalDecodes / res.wallTimeSec;
+    return res;
+}
+
+// ---------------------------------------------------------------------------
+// zxing-cpp multi-thread benchmark
+// ---------------------------------------------------------------------------
+static MultiThreadResult benchZXingMulti(const vector<string>& images,
+                                          int iterations, int numThreads)
+{
+    MultiThreadResult res;
+    res.libraryName = "zxing-cpp";
+
+    // Filter out PDFs (stb_image cannot load them)
+    vector<string> validImages;
+    for (const auto& img : images) {
+        string ext = filesystem::path(img).extension().string();
+        transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        if (ext != ".pdf")
+            validImages.push_back(img);
+    }
+    if (validImages.empty()) return res;
+
+    ZXing::ReaderOptions options;
+    options.tryHarder(true);
+    static const array<ZXing::ImageFormat, 5> fmtMap = {
+        ZXing::ImageFormat::None, ZXing::ImageFormat::Lum,
+        ZXing::ImageFormat::LumA, ZXing::ImageFormat::RGB,
+        ZXing::ImageFormat::RGBA
+    };
+
+    auto t0 = high_resolution_clock::now();
+    atomic<int> totalBarcodes{0};
+    vector<thread> workers;
+
+    for (int t = 0; t < numThreads; ++t)
+    {
+        workers.emplace_back([&, t]() {
+            for (size_t i = t; i < validImages.size(); i += numThreads)
+            {
+                int width = 0, height = 0, channels = 0;
+                unsigned char* buf = stbi_load(validImages[i].c_str(), &width, &height, &channels, 0);
+                if (!buf) continue;
+
+                ZXing::ImageFormat fmt = (channels >= 1 && channels <= 4)
+                                             ? fmtMap[channels]
+                                             : ZXing::ImageFormat::None;
+                ZXing::ImageView iv(buf, width, height, fmt);
+
+                int localBc = 0;
+                for (int it = 0; it < iterations; ++it)
+                {
+                    auto bc = ZXing::ReadBarcodes(iv, options);
+                    if (it == 0) localBc = static_cast<int>(bc.size());
+                }
+                totalBarcodes.fetch_add(localBc);
+                stbi_image_free(buf);
+            }
+        });
+    }
+    for (auto& w : workers) w.join();
+
+    auto t1 = high_resolution_clock::now();
+    res.wallTimeSec = duration_cast<microseconds>(t1 - t0).count() / 1e6;
+    res.totalBarcodes = totalBarcodes.load();
+    res.totalDecodes = static_cast<int>(validImages.size()) * iterations;
+    res.throughput = res.totalDecodes / res.wallTimeSec;
+    return res;
+}
+
+// ---------------------------------------------------------------------------
 // Print helpers
 // ---------------------------------------------------------------------------
 static void printSeparator(int w1, int w2, int w3, int w4, int w5)
@@ -228,6 +369,33 @@ static void printRow(const BenchResult& r)
 }
 
 // ---------------------------------------------------------------------------
+// Multi-thread print helpers
+// ---------------------------------------------------------------------------
+static void printMultiHeader(int numThreads)
+{
+    cout << "--- Multi-Threaded Benchmark (" << numThreads << " threads) ---\n";
+    cout << "|" << left << setw(12) << " Library"
+         << "|" << right << setw(14) << " Wall Time (s)"
+         << "|" << right << setw(14) << " Decodes/s"
+         << "|" << right << setw(14) << " Total Decodes"
+         << "|" << right << setw(14) << " Barcodes"
+         << "|\n";
+    cout << "|" << string(12, '-') << "|" << string(14, '-')
+         << "|" << string(14, '-') << "|" << string(14, '-')
+         << "|" << string(14, '-') << "|\n";
+}
+
+static void printMultiRow(const MultiThreadResult& r)
+{
+    cout << "|" << left  << setw(12) << (" " + r.libraryName)
+         << "|" << right << setw(14) << fixed << setprecision(3) << r.wallTimeSec
+         << "|" << right << setw(14) << fixed << setprecision(1) << r.throughput
+         << "|" << right << setw(14) << r.totalDecodes
+         << "|" << right << setw(14) << r.totalBarcodes
+         << "|\n";
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 int main(int argc, char* argv[])
@@ -239,17 +407,40 @@ int main(int argc, char* argv[])
          << " vs zxing-cpp v" << ZXING_VERSION << "\n";
     cout << "=============================================================\n\n";
 
-    if (argc < 2) {
+    // --- Parse arguments ---
+    int numThreads = 0;
+    int iterations = 10;
+    string inputPath;
+
+    vector<string> posArgs;
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "--threads") == 0) {
+            if (i + 1 < argc) {
+                numThreads = atoi(argv[++i]);
+                if (numThreads < 1) numThreads = 1;
+            } else {
+                cerr << "Error: --threads requires a number argument\n";
+                return 1;
+            }
+        } else {
+            posArgs.push_back(argv[i]);
+        }
+    }
+
+    if (posArgs.empty()) {
         cout << "Usage: " << (argc > 0 ? argv[0] : "benchmark")
-             << " <image_or_folder> [iterations]\n"
+             << " [--threads N] <image_or_folder> [iterations]\n"
              << "  image_or_folder : path to an image file or a directory\n"
-             << "  iterations      : decoding passes per image (default: 10)\n";
+             << "  iterations      : decoding passes per image (default: 10)\n"
+             << "  --threads N     : run multi-threaded throughput benchmark with N threads\n";
         return 0;
     }
 
-    string inputPath = argv[1];
-    int iterations   = (argc >= 3) ? atoi(argv[2]) : 10;
-    if (iterations < 1) iterations = 1;
+    inputPath = posArgs[0];
+    if (posArgs.size() >= 2) {
+        iterations = atoi(posArgs[1].c_str());
+        if (iterations < 1) iterations = 1;
+    }
 
     if (!filesystem::exists(inputPath)) {
         cerr << "Error: path does not exist: " << inputPath << "\n";
@@ -262,10 +453,13 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    cout << "Found " << images.size() << " image(s). Iterations per image: "
-         << iterations << "\n\n";
+    cout << "Found " << images.size() << " image(s). "
+         << "Iterations per image: " << iterations;
+    if (numThreads > 0)
+        cout << ", Threads: " << numThreads;
+    cout << "\n\n";
 
-    // Initialize Dynamsoft
+    // --- Initialize Dynamsoft ---
     char szErrorMsg[256] = {0};
     int iRet = CLicenseManager::InitLicense(
         "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==",
@@ -284,7 +478,9 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    // Accumulators for overall summary
+    // ================================================================
+    // Single-thread benchmark (per-image detail)
+    // ================================================================
     double totalDynTime   = 0.0;
     int    totalDynBc     = 0;
     double totalZxTime    = 0.0;
@@ -326,9 +522,9 @@ int main(int argc, char* argv[])
         cout << "\n";
     }
 
-    // Summary
+    // Single-thread summary
     cout << "=============================================================\n";
-    cout << " Summary (" << processedCount << " image(s), "
+    cout << " Single-Thread Summary (" << processedCount << " image(s), "
          << iterations << " iterations each)\n";
     cout << "=============================================================\n";
     cout << "|" << left << setw(12) << " Library"
@@ -346,6 +542,36 @@ int main(int argc, char* argv[])
          << totalZxTime << "ms"
          << "|" << right << setw(14) << totalZxBc << "|\n";
     cout << "\n";
+
+    // ================================================================
+    // Multi-thread benchmark (optional)
+    // ================================================================
+    if (numThreads > 0)
+    {
+        cout << "=============================================================\n";
+        printMultiHeader(numThreads);
+
+        MultiThreadResult dynMulti = benchDynamsoftMulti(cvr, images, iterations, numThreads);
+        printMultiRow(dynMulti);
+
+        MultiThreadResult zxMulti = benchZXingMulti(images, iterations, numThreads);
+        printMultiRow(zxMulti);
+
+        // Speedup vs single-thread
+        if (totalDynTime > 0 && dynMulti.wallTimeSec > 0) {
+            double dynSeqTotal = totalDynTime * iterations / 1000.0;
+            double dynSpeedup  = dynSeqTotal / dynMulti.wallTimeSec;
+            double zxSeqTime = totalZxTime / 1000.0;
+            if (zxSeqTime > 0 && zxMulti.wallTimeSec > 0) {
+                double zxSeqTotal = zxSeqTime * iterations;
+                double zxSpeedup  = zxSeqTotal / zxMulti.wallTimeSec;
+                cout << fixed << setprecision(2);
+                cout << "Speedup:  Dynamsoft " << dynSpeedup << "x,  zxing-cpp "
+                     << zxSpeedup << "x" << std::endl;
+            }
+        }
+        cout << "\n";
+    }
 
     delete cvr;
     return 0;

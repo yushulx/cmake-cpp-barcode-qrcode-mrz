@@ -5,8 +5,9 @@ A C++ benchmarking tool that compares the decoding performance of [Dynamsoft Bar
 ## Features
 
 - Processes single images or entire directories (recursive)
-- Runs each library multiple times per image (default: 10) and reports avg/min/max decode time
-- Tabular per-image comparison and overall summary
+- Single-thread benchmark: runs each library multiple times per image and reports avg/min/max decode time
+- Multi-thread benchmark (optional): processes all images concurrently across N threads, reports throughput and wall-clock time
+- Tabular per-image single-thread comparison + overall summary
 - Supports common image formats: JPG, PNG, BMP, TIFF, GIF, PDF (Dynamsoft only)
 - Cross-platform CMake build (Windows, Linux, macOS)
 
@@ -56,9 +57,10 @@ After a successful build the executable is at `build/Release/benchmark.exe` (Win
 ## Usage
 
 ```bash
-benchmark <image_or_folder> [iterations]
+benchmark [--threads N] <image_or_folder> [iterations]
 ```
 
+- `--threads N` — (optional) run multi-threaded throughput benchmark with N threads after single-thread comparison.
 - `image_or_folder` — path to a single image file or a directory (scanned recursively).
 - `iterations` — number of decoding passes per image (default: 10). Higher values give more stable timing averages.
 
@@ -76,28 +78,32 @@ Benchmark a folder with 5 iterations:
 benchmark "C:\images" 5
 ```
 
-### Sample Output
+Benchmark a folder with 5 iterations and 4 threads (multi-thread throughput):
+
+```bash
+benchmark --threads 4 "C:\images" 5
+```
+
+### Sample Output (multi-threaded)
+
+With `--threads 4`, the multi-thread benchmark section is appended after the single-thread summary:
 
 ```
 =============================================================
- Barcode Benchmark: Dynamsoft DBR v11.4.20.7177 vs zxing-cpp v3.0.2
-=============================================================
-
-Found 1 image(s). Iterations per image: 3
-
---- Code 128.png ---
-| Library    |      Avg (ms)|      Min (ms)|      Max (ms)|      Barcodes|
-|------------|--------------|--------------|--------------|--------------|
-| Dynamsoft  |         36.21|         17.62|         71.48|             1|
-| zxing-cpp  |          9.88|          9.55|         10.26|             1|
-
-=============================================================
- Summary (1 image(s), 3 iterations each)
+ Single-Thread Summary (44 image(s), 3 iterations each)
 =============================================================
 | Library    |     Total Avg|      Total Bc|
 |------------|--------------|--------------|
-| Dynamsoft  |        36.21ms|             1|
-| zxing-cpp  |         9.88ms|             1|
+| Dynamsoft  |      3326.84ms|           353|
+| zxing-cpp  |      1960.86ms|           232|
+
+=============================================================
+--- Multi-Threaded Benchmark (4 threads) ---
+| Library    | Wall Time (s)|     Decodes/s| Total Decodes|      Barcodes|
+|------------|--------------|--------------|--------------|--------------|
+| Dynamsoft  |         3.726|          35.4|           132|           353|
+| zxing-cpp  |         2.368|          54.5|           129|           232|
+Speedup:  Dynamsoft 2.93x,  zxing-cpp 2.53x
 ```
 
 ## Notes
@@ -105,3 +111,4 @@ Found 1 image(s). Iterations per image: 3
 - **PDF files**: Only Dynamsoft can process PDFs. zxing-cpp (via stb_image) does not support PDF input — those rows show "N/A".
 - **License**: The Dynamsoft trial license key is embedded in the source. Replace it with your own license for production use.
 - **Fair comparison**: zxing-cpp decodes from pre-loaded pixel data while Dynamsoft reads from file each iteration (its native API). Both timings include the full decoding pipeline.
+- **Multi-threading**: Each thread creates its own Dynamsoft `CCaptureVisionRouter` instance since the SDK is not thread-safe for concurrent decode calls on a single router. zxing-cpp's `ReadBarcodes` is thread-safe and each thread loads its own image data independently.
