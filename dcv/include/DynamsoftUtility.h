@@ -13,7 +13,7 @@
 #endif
 
 #include"DynamsoftCaptureVisionRouter.h"
-#define DISA_VERSION "2.2.10.5856"
+#define DISA_VERSION "2.4.20.7177"
 
 #ifdef __cplusplus
 
@@ -206,6 +206,26 @@ namespace dynamsoft {
 
 			virtual const char* GetEncryptedString();
 
+			/**
+			* Sets the cross-verification criteria for specified result item types.
+			*
+			* This function allows customization of the multi-frame verification parameters,
+			* controlling how many frames are analyzed and how many consistent results are required.
+			*
+			* @param [in] resultItemTypes The result item types to apply the criteria to (can be a combination of CapturedResultItemType values).
+			* @param [in] frameWindow The number of frames to consider for cross-verification.
+			* @param [in] minConsistentFrames The minimum number of frames that must contain consistent results for verification to succeed.
+			*/
+			void SetResultCrossVerificationCriteria(int resultItemTypes, int frameWindow, int minConsistentFrames);
+
+			/**
+			* Gets the cross-verification criteria for specified result item types.
+			*
+			* @param [in] resultItemType The result item type to query (CapturedResultItemType value).
+			* @param [out] frameWindow Returns the frame window size currently configured for this result type.
+			* @param [out] minConsistentFrames Returns the minimum consistent frames currently configured for this result type.
+			*/
+			void GetResultCrossVerificationCriteria(CapturedResultItemType resultItemType, int& frameWindow, int& minConsistentFrames);
 		};
 
 		/**
@@ -219,7 +239,7 @@ namespace dynamsoft {
 		private:
 			class CProactiveImageSourceAdapterInner;
 			CProactiveImageSourceAdapter(const CProactiveImageSourceAdapter&);
-			CProactiveImageSourceAdapter& operator=(const CProactiveImageSourceAdapter&);
+			CProactiveImageSourceAdapter& operator=(const CProactiveImageSourceAdapter&) = delete;
 			CProactiveImageSourceAdapterInner* m_inner;
 
 			void FetchImageToBuffer();
@@ -581,22 +601,32 @@ namespace dynamsoft {
 			 */
 			CImageData* ConvertToGray(const CImageData* pImageData, float R = 0.3f, float G = 0.59f, float B = 0.11f);
 			/**
-			 * Converts the grayscale image to binary image using a global threshold.
-			 * @param pImageData: Input image in grayscale.
-			 * @param threshold: Global threshold for binarization(default is -1, automatic calculate the threshold).
-			 * @param invert: If true, invert the binary image (black becomes white and white becomes black).
-			 * @return: Returns a pointer to a CImageData object after binarization.
+			 * Converts an input image to a binary image using a global threshold.
+			 * Supports grayscale, color, and binary input images (color images are internally
+			 * converted to grayscale before thresholding).
+			 *
+			 * @param pImageData  Input image (grayscale, color, or binary).
+			 * @param threshold   Global threshold for binarization. If set to -1 (default),
+			 *                    the function will automatically compute an optimal threshold.
+			 * @param invert      If true, invert the output binary image.
+			 *
+			 * @return Pointer to a CImageData object representing the binarized image.
 			 */
 			CImageData* ConvertToBinaryGlobal(const CImageData* pImageData, int threshold = -1, bool invert = false);
 			/**
-			 * Converts the grayscale image to binary image using local (adaptive) binarization.
-			 * @param pImageData: Input image in grayscale.
-			 * @param blockSize: Size of the block for local binarization(default is 0).
-			 * @param compensation: Adjustment value to modify the threshold (default is 0).
-			 * @param invert: If true, invert the binary image (black becomes white and white becomes black).
-			 * @return: Image after binarization.
+			 * Converts an input image to a binary image using local (adaptive) thresholding.
+			 * Supports grayscale, color, and binary input images (color images are internally
+			 * converted to grayscale before thresholding).
+			 *
+			 * @param pImageData   Input image (grayscale, color, or binary).
+			 * @param blockSize    Size of the local block used for adaptive thresholding.
+			 *                     If set to 0 (default), a suitable block size will be chosen automatically.
+			 * @param compensation Adjustment value applied to the computed local threshold (default 10).
+			 * @param invert       If true, invert the output binary image.
+			 *
+			 * @return Pointer to a CImageData object representing the locally binarized image.
 			 */
-			CImageData* ConvertToBinaryLocal(const CImageData* pImageData, int blockSize = 0, int compensation = 0, bool invert = false);
+			CImageData* ConvertToBinaryLocal(const CImageData* pImageData, int blockSize = 0, int compensation = 10, bool invert = false);
 
 		};
 #pragma pack(pop)

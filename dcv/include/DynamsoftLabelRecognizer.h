@@ -14,7 +14,7 @@
 
 #include "DynamsoftCore.h"
 
-#define DLR_VERSION                  "4.2.10.5856"
+#define DLR_VERSION                  "4.4.20.7177"
 
 /**
 * @enum RawTextLineStatus
@@ -94,15 +94,15 @@ namespace dynamsoft
 			/**
 			 * The character with high confidence.
 			 */
-			char characterH;
+			char characterH{};
 			/**
 			 * The character with medium confidence.
 			 */
-			char characterM;
+			char characterM{};
 			/**
 			 * The character with low confidence.
 			 */
-			char characterL;
+			char characterL{};
 			/**
 			 * The location of the character in a quadrilateral shape.
 			 */
@@ -110,15 +110,15 @@ namespace dynamsoft
 			/**
 			 * The confidence of the character with high confidence.
 			 */
-			int characterHConfidence;
+			int characterHConfidence{};
 			/**
 			 * The confidence of the character with medium confidence.
 			 */
-			int characterMConfidence;
+			int characterMConfidence{};
 			/**
 			 * The confidence of the character with low confidence.
 			 */
-			int characterLConfidence;
+			int characterLConfidence{};
 		};
 
 		namespace intermediate_results
@@ -331,12 +331,63 @@ namespace dynamsoft
 				 * @return Returns 0 if successful, otherwise returns a negative value.
 				 */
 				virtual int SetLocalizedTextLine(int index, const CLocalizedTextLineElement* element, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
+
+				/**
+				* Gets the count of auxiliary region elements in the unit.
+				*
+				* @return Returns the number of auxiliary region elements.
+				*
+				*/
+				virtual int GetAuxiliaryRegionElementsCount() const = 0;
+
+				/**
+				* Gets the auxiliary region element at the specified index.
+				*
+				* @param [in] index The zero-based index of the auxiliary region element to retrieve.
+				*
+				* @return Returns a pointer to the CAuxiliaryRegionElement object, or NULL if the index is out of range.
+				*
+				*/
+				virtual const CAuxiliaryRegionElement* GetAuxiliaryRegionElement(int index) const = 0;
+
+				/**
+				 * Sets or replaces the auxiliary region element at the specified index.
+				 *
+				 * @param index The zero-based index where the element should be set.
+				 * @param element The auxiliary region element to set.
+				 * @param matrixToOriginalImage The matrix to original image.
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 */
+				virtual int SetAuxiliaryRegionElement(int index, const CAuxiliaryRegionElement* element, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
+
+				/**
+				 * Adds a new auxiliary region element to this unit.
+				 *
+				 * @param element The auxiliary region element to add.
+				 * @param matrixToOriginalImage The matrix to original image.
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 */
+				virtual int AddAuxiliaryRegionElement(const CAuxiliaryRegionElement* element, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
+
+				/**
+				 * Removes the auxiliary region element at the specified index.
+				 *
+				 * @param index The zero-based index of the auxiliary region element to remove.
+				 * @return Returns 0 if successful, otherwise returns a negative value.
+				 */
+				virtual int RemoveAuxiliaryRegionElement(int index) = 0;
+
+				/**
+				 * Removes all auxiliary region elements from this unit.
+				 *
+				 */
+				virtual void RemoveAllAuxiliaryRegionElements() = 0;
 			};
 
 			/**
-						* The `CRecognizedTextLinesUnit` class represents an intermediate result unit containing recognized text lines. It inherits from the `CIntermediateResultUnit` class.
-						*
-						*/
+			* The `CRecognizedTextLinesUnit` class represents an intermediate result unit containing recognized text lines. It inherits from the `CIntermediateResultUnit` class.
+			*
+			*/
 			class DLR_API CRecognizedTextLinesUnit : public CIntermediateResultUnit
 			{
 			protected:

@@ -27,7 +27,7 @@
 #include "DynamsoftCodeParser.h"
 //#endif
 
-#define DCV_VERSION                  "3.2.10.5856"
+#define DCV_VERSION                  "3.4.20.7177"
 
 /**Enumeration section*/
 
@@ -1363,7 +1363,7 @@ namespace dynamsoft
 			int GetParameterTemplateName(const int index, char nameBuffer[], int nameBufferLen);
 
 			/**
-			* Appends a model to the model buffer.
+			* Appends a deep learning model to the memory buffer.
 			*
 			* @param [in] modelName The name of the model.
 			* @param [in] modelBytes The bytes of the model.
@@ -1371,6 +1371,18 @@ namespace dynamsoft
 			* @param [in] maxModelInstances The max instances created for the model.
 			*
 			* @return Returns 0 if succeeds, nonzero otherwise.
+			*/
+			static int AppendDLModelBuffer(const char* modelName, const unsigned char* modelBytes, int modelBytesLength, int maxModelInstances);
+
+			/**
+			* Clears all deep learning models from buffer to free up memory.
+			*
+			*/
+			static void ClearDLModelBuffers();
+
+			/**
+			* Deprecated. Will be removed in future versions. Use AppendDLModelBuffer instead.
+			*
 			*/
 			static int AppendModelBuffer(const char* modelName, const unsigned char* modelBytes, int modelBytesLength, int maxModelInstances);
 
@@ -1394,8 +1406,8 @@ namespace dynamsoft
 			static void SetGlobalIntraOpNumThreads(int intraOpNumThreads = 0);
 
 		private:
-			CCaptureVisionRouter(const CCaptureVisionRouter& r);
-			CCaptureVisionRouter& operator=(const CCaptureVisionRouter& r);
+			CCaptureVisionRouter(const CCaptureVisionRouter& r) = delete;
+			CCaptureVisionRouter& operator=(const CCaptureVisionRouter& r) = delete;
 		};
 
 		/**

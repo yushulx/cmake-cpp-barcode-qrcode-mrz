@@ -13,7 +13,7 @@
 #endif
 #include "DynamsoftCore.h"
 
-#define DIP_VERSION                  "3.2.10.5856"
+#define DIP_VERSION                  "3.4.20.7177"
 
 namespace dynamsoft
 {
@@ -40,6 +40,13 @@ namespace dynamsoft
 			 * @return An object of CPredetectedRegionElement
 			 */
 			static intermediate_results::CPredetectedRegionElement* CreatePredetectedRegionElement();
+
+			/**
+			 * Create an Auxiliary Region Element object.
+			 *
+			 * @return An object of CAuxiliaryRegionElement
+			 */
+			static intermediate_results::CAuxiliaryRegionElement* CreateAuxiliaryRegionElement();
 		};
 #pragma pack(pop)
 	}

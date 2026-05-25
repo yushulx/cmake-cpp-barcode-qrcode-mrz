@@ -18,7 +18,7 @@ typedef void* HANDLE;
 
 #include "DynamsoftCore.h"
 
-#define DBR_VERSION "11.2.10.5856"
+#define DBR_VERSION "11.4.20.7177"
 
 /**Enumeration section*/
 
@@ -92,7 +92,7 @@ enum BarcodeFormat : unsigned long long
 	/**GS1 Databar Expanded*/
 	BF_GS1_DATABAR_EXPANDED = 0x8000,
 
-	/**GS1 Databar Expaned Stacked*/
+	/**GS1 Databar Expanded Stacked*/
 	BF_GS1_DATABAR_EXPANDED_STACKED = 0x10000,
 
 	/**GS1 Databar Limited*/
@@ -227,7 +227,6 @@ typedef enum LocalizationMode
 	/**Localizes 1D barcodes fast. Check @ref LM for available argument settings. */
 	LM_ONED_FAST_SCAN = 0x100,
 
-	// added in v11.0.10
 	/** Localizes barcodes by utilizing a neural network model. */
 	LM_NEURAL_NETWORK = 0X200,
 
@@ -410,7 +409,7 @@ namespace dynamsoft
 		 * The `CBarcodeDetails` class represents the details of a barcode. It is an abstract base class.
 		 *
 		 */
-		class DBR_API CBarcodeDetails 
+		class DBR_API CBarcodeDetails
 		{
 		public:
 			/**
@@ -422,7 +421,7 @@ namespace dynamsoft
 		/**
 		 * The `COneDCodeDetails` class represents detailed information about a one-dimensional barcode. It inherits from the `CBarcodeDetails` class.
 		 */
-		class DBR_API COneDCodeDetails :public CBarcodeDetails 
+		class DBR_API COneDCodeDetails :public CBarcodeDetails
 		{
 		public:
 			/**
@@ -484,7 +483,7 @@ namespace dynamsoft
 		 * The `CQRCodeDetails` class represents the details of a QR Code barcode. It is derived from the `CBarcodeDetails` class and contains various attributes related to the QR Code barcode.
 		 *
 		 */
-		class DBR_API CQRCodeDetails : public CBarcodeDetails 
+		class DBR_API CQRCodeDetails : public CBarcodeDetails
 		{
 		public:
 			CQRCodeDetails(int _rows = -1, int _columns = -1, QRCodeErrorCorrectionLevel _level = QRECL_ERROR_CORRECTION_H,
@@ -537,7 +536,7 @@ namespace dynamsoft
 		 * The `CPDF417Details` class represents a barcode in PDF417 format. It inherits from the `CBarcodeDetails` class and contains information about the row count, column count, and error correction level of the barcode.
 		 *
 		 */
-		class DBR_API CPDF417Details :public CBarcodeDetails 
+		class DBR_API CPDF417Details :public CBarcodeDetails
 		{
 		public:
 			CPDF417Details(int _rows = -1, int _columns = -1, int _level = -1,
@@ -574,7 +573,7 @@ namespace dynamsoft
 		 * The `CDataMatrixDetails` class represents the details of a DataMatrix barcode. It is derived from the `CBarcodeDetails` class and contains various attributes related to the DataMatrix barcode.
 		 *
 		 */
-		class DBR_API CDataMatrixDetails : public CBarcodeDetails 
+		class DBR_API CDataMatrixDetails : public CBarcodeDetails
 		{
 		public:
 			CDataMatrixDetails(int _rows = -1, int _columns = -1, int _dataRegionRows = -1,
@@ -600,7 +599,7 @@ namespace dynamsoft
 		 * The `CAztecDetails` class represents a barcode in Aztec format. It inherits from the `CBarcodeDetails` class and contains information about the row count, column count, and layer number of the barcode.
 		 *
 		 */
-		class DBR_API CAztecDetails :public CBarcodeDetails 
+		class DBR_API CAztecDetails :public CBarcodeDetails
 		{
 		public:
 			CAztecDetails(int _rows = -1, int _columns = -1, int _layerNumber = -1);
@@ -614,6 +613,36 @@ namespace dynamsoft
 			/*A negative number (-1, -2, -3, -4) specifies a compact Aztec code.
 			 *A positive number (1, 2, .. 32) specifies a normal(full-rang) Aztec code */
 			int layerNumber;
+		};
+
+		/**
+		 * Represents the Extended Channel Interpretation (ECI) information within a barcode.
+		 *
+		 * Each ECI segment specifies the character encoding used for a portion of the decoded bytes.
+		 * The charset names follow the IANA character set registry (e.g. "UTF-8", "ISO-8859-1").
+		 */
+		class DBR_API CECISegment
+		{
+		public:
+			/**
+			 * ECI assignment number as defined by ISO/IEC 15424.
+			 */
+			int eciValue;
+
+			/**
+			 * Charset encoding name defined by IANA (e.g. "UTF-8", "ISO-8859-1").
+			 */
+			const char* charsetEncoding;
+
+			/**
+			 * Start index of this ECI segment in the decoded barcode bytes.
+			 */
+			int startIndex;
+
+			/**
+			 * Length (in bytes) of this segment within the decoded barcode bytes.
+			 */
+			int length;
 		};
 
 		namespace intermediate_results
@@ -847,6 +876,21 @@ namespace dynamsoft
 				 * @return Returns 0 if success, otherwise an error code.
 				 */
 				virtual int SetLocation(const CQuadrilateral& location) = 0;
+
+				/**
+				 * Gets the number of ECI segments in the barcode.
+				 *
+				 * @return The count of ECI segments. Returns 0 if no ECI information is present.
+				 */
+				virtual int GetECISegmentsCount() const = 0;
+
+				/**
+				 * Gets the ECI segment at the specified index.
+				 *
+				 * @param index The zero-based index of the ECI segment to retrieve.
+				 * @return A pointer to the CECISegment object, or NULL if the index is out of range.
+				 */
+				virtual const CECISegment* GetECISegment(int index) const = 0;
 			};
 
 			/**
@@ -1471,6 +1515,21 @@ namespace dynamsoft
 			 *
 			 */
 			virtual int SetLocation(const CQuadrilateral& location) = 0;
+
+			/**
+			 * Gets the number of ECI segments in the barcode.
+			 *
+			 * @return The count of ECI segments. Returns 0 if no ECI information is present.
+			 */
+			virtual int GetECISegmentsCount() const = 0;
+
+			/**
+			 * Gets the ECI segment at the specified index.
+			 *
+			 * @param index The zero-based index of the ECI segment to retrieve.
+			 * @return A pointer to the CECISegment object, or NULL if the index is out of range.
+			 */
+			virtual const CECISegment* GetECISegment(int index) const = 0;
 
 		};
 

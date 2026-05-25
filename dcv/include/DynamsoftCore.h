@@ -1,5 +1,5 @@
 #pragma once
-#define DYNAMSOFT_CORE_VERSION "4.2.10.5856"
+#define DYNAMSOFT_CORE_VERSION "4.4.20.7177"
 
 /**Enumeration section*/
 
@@ -204,6 +204,9 @@ typedef enum ErrorCode {
 	/*The template version is incompatible. Please use a compatible template.*/
 	EC_TEMPLATE_VERSION_INCOMPATIBLE = -10081,
 	
+	/**The portrait zone could not be located on the identity document.*/
+	EC_PORTRAIT_ZONE_NOT_FOUND = -10082,
+
 	/** -20000~-29999: DLS license error code. */
 	/**No license.*/
 	EC_NO_LICENSE = -20000,
@@ -810,7 +813,10 @@ typedef enum RegionObjectElementType
 	ROET_TARGET_ROI,
 
 	/**The type of subclass EnhancedImageElement.*/
-	ROET_ENHANCED_IMAGE
+	ROET_ENHANCED_IMAGE,
+
+	/**The type for the AuxiliaryRegionElement class.*/
+	ROET_AUXILIARY_REGION
 } RegionObjectElementType;
 
 /**
@@ -1233,7 +1239,7 @@ namespace dynamsoft
 			 *
 			 * @param contour The rvalue reference to another CContour object.
 			 */
-			CContour(CContour&& contour);
+			CContour(CContour&& contour) noexcept;
 
 			/**
 			 * Copy assignment operator for CContour.
@@ -1249,7 +1255,7 @@ namespace dynamsoft
 			 * @param barcode The rvalue reference to another CContour object.
 			 * @return A reference to the moved CContour object.
 			 */
-			CContour& operator=(CContour&& contour);
+			CContour& operator=(CContour&& contour) noexcept;
 
 			/**
 			 * Sets the point array and the freePointsFunc function pointer.
@@ -1282,7 +1288,7 @@ namespace dynamsoft
 		class DS_API CVector4
 		{
 		public:
-			int value[4];
+			int value[4]{};
 
 			/**
 			* Constructor
@@ -1472,7 +1478,7 @@ namespace dynamsoft
 			/**
 			* The type of the corner.
 			*/
-			CornerType type;
+			CornerType type{};
 
 			/**
 			* The intersection point of the corner.
@@ -1554,7 +1560,7 @@ namespace dynamsoft
 			/**
 			* The ID of the quadrilateral.
 			*/
-			int id;
+			int id{ -1 };
 
 			/**
 			* Determines whether a point is inside the quadrilateral.
@@ -1713,8 +1719,8 @@ namespace dynamsoft
 			int pageNumber;
 			int totalPages;
 		private:
-			CFileImageTag(const CFileImageTag&);
-			CFileImageTag& operator=(const CFileImageTag&);
+			CFileImageTag(const CFileImageTag&) = delete;
+			CFileImageTag& operator=(const CFileImageTag&) = delete;
 		};
 
 		/**
@@ -1728,7 +1734,7 @@ namespace dynamsoft
 			CRect* cropRegion;
 			int originalWidth;
 			int originalHeight;
-			int clarity;
+			unsigned int clarity;
 
 		public:
 			/**
@@ -1793,7 +1799,7 @@ namespace dynamsoft
 			* @return Returns the clarity of the video frame.
 			*
 			*/
-			int GetClarity() const;
+			unsigned int GetClarity() const;
 
 			/**
 			* The constructor of the CVideoFrameTag class.
@@ -1807,7 +1813,7 @@ namespace dynamsoft
 			*
 			*/
 			CVideoFrameTag(VideoFrameQuality quality, bool isCropped, const CRect* cropRegion,
-				int originalWidth, int originalHeight, int clarity = 0);
+				int originalWidth, int originalHeight, unsigned int clarity = 0);
 
 			/**
 			* The destructor of the CVideoFrameTag class.
@@ -1948,8 +1954,8 @@ namespace dynamsoft
 			void SetImageTag(const CImageTag* _tag);
 			
 		private:
-			CImageData(const CImageData&);
-			CImageData& operator=(const CImageData&);
+			CImageData(const CImageData&) = delete;
+			CImageData& operator=(const CImageData&) = delete;
 		};
 
 		/**
@@ -2052,7 +2058,7 @@ namespace dynamsoft
 			 * @return Returns a pointer to a null-terminated string that represents the hash ID of the original image.
 			 *
 			 */
-			virtual const char* GetOriginalImageHashId()const = 0;
+			virtual const char* GetOriginalImageHashId() const = 0;
 
 			/**
 			 * Gets the tag of the original image.
@@ -2062,7 +2068,7 @@ namespace dynamsoft
 			 * @see CImageTag
 			 *
 			 */
-			virtual const CImageTag* GetOriginalImageTag()const = 0;
+			virtual const CImageTag* GetOriginalImageTag() const = 0;
 
 			/**
 			 * Gets the rotation transformation matrix of the original image relative to the rotated image.
@@ -2080,7 +2086,7 @@ namespace dynamsoft
 			 * @see ErrorCode
 			 *
 			 */
-			virtual int GetErrorCode()const = 0;
+			virtual int GetErrorCode() const = 0;
 
 			/**
 			 * Gets the error message of the detection operation.
@@ -2088,7 +2094,7 @@ namespace dynamsoft
 			 * @return Returns a pointer to a null-terminated string that represents the error message.
 			 *
 			 */
-			virtual const char* GetErrorString()const = 0;
+			virtual const char* GetErrorString() const = 0;
 		};
 
 		/**
@@ -2117,8 +2123,8 @@ namespace dynamsoft
 		{
 		private:
 			class CImageSourceAdapterInner;
-			CImageSourceAdapter(const CImageSourceAdapter&);
-			CImageSourceAdapter& operator=(const CImageSourceAdapter&);
+			CImageSourceAdapter(const CImageSourceAdapter&) = delete;
+			CImageSourceAdapter& operator=(const CImageSourceAdapter&) = delete;
 			CImageSourceAdapterInner* m_inner;
 		protected:
 			CImageSourceErrorListener* m_listener;
@@ -2931,8 +2937,8 @@ namespace dynamsoft
 		{
 		private:
 			CQuadrilateral location;
-			int charContoursCount;
-			int* charContoursIndices;
+			int charContoursCount{};
+			int* charContoursIndices{};
 
 		public:
 			/**
@@ -3423,6 +3429,57 @@ namespace dynamsoft
 			* @remark It is for internal calls of function modules such as DynamsoftBarcodeReader, DynamsoftLabelRecognizer and DynamsoftDocumentNormalizer.
 			*/
 			virtual void OnTaskResultsReceivedInner(CIntermediateResult *pResult, const IntermediateResultExtraInfo* info) = 0;
+		};
+
+		/**
+		* Represents an auxiliary region element that contains additional region information detected during processing (e.g., portrait zones, specific document areas).
+		*
+		* This class extends CRegionObjectElement to provide named regions with confidence scores.
+		*/
+		class DS_API CAuxiliaryRegionElement : public CRegionObjectElement
+		{
+		protected:
+			/**
+			* Destructor
+			*/
+			virtual ~CAuxiliaryRegionElement() {};
+
+		public:
+			/**
+			 * Gets the name of this auxiliary region.
+			 *
+			 * @return Returns a string representing the region name (e.g., "PortraitZone", "SignatureArea").
+			 */
+			virtual const char* GetName() const = 0;
+
+			/**
+			 * Gets the confidence level of this auxiliary region detection.
+			 *
+			 * @return Returns the confidence value, typically in the range [0, 100].
+			 */
+			virtual int GetConfidence() const = 0;
+
+			/**
+			 * Sets the name/type of this auxiliary region.
+			 *
+			 * @param name The region name to set (e.g., "PortraitZone", "SignatureArea").
+			 */
+			virtual void SetName(const char* name) = 0;
+
+			/**
+			 * Sets the location of this auxiliary region.
+			 *
+			 * @param location A quadrilateral defining the region boundaries.
+			 * @return Returns 0 if success, otherwise an error code.
+			 */
+			virtual int SetLocation(const CQuadrilateral& location) = 0;
+
+			/**
+			 * Sets the confidence level of this auxiliary region detection.
+			 *
+			 * @param confidence The confidence value to set, typically in the range [0, 100].
+			 */
+			virtual void SetConfidence(int confidence) = 0;
 		};
 #pragma pack(pop)
 	}

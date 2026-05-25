@@ -8,7 +8,9 @@
       "SemanticProcessingNameArray": [
         "sp_passport_and_id"
       ],
-      "Timeout": 2000
+      "Timeout": 2000,
+      "MaxParallelTasks": 0,
+      "OutputOriginalImage": 1
     },
     {
       "Name": "ReadPassport",
@@ -18,7 +20,9 @@
       "SemanticProcessingNameArray": [
         "sp_passport"
       ],
-      "Timeout": 2000
+      "Timeout": 2000,
+      "MaxParallelTasks": 0,
+      "OutputOriginalImage": 1
     },
     {
       "Name": "ReadId",
@@ -48,20 +52,24 @@
       "SemanticProcessingNameArray": [
         "sp_mrz"
       ],
-      "Timeout": 2000
+      "Timeout": 2000,
+      "MaxParallelTasks": 0,
+      "OutputOriginalImage": 1
     }
   ],
   "TargetROIDefOptions": [
     {
       "Name": "roi_passport_and_id",
       "TaskSettingNameArray": [
-        "task_passport_and_id"
+        "task_passport_and_id",
+        "task-detect-document"
       ]
     },
     {
       "Name": "roi_passport",
       "TaskSettingNameArray": [
-        "task_passport"
+        "task_passport",
+        "task-detect-document"
       ]
     },
     {
@@ -79,7 +87,8 @@
     {
       "Name": "roi_mrz",
       "TaskSettingNameArray": [
-        "task_mrz"
+        "task_mrz",
+        "task-detect-document"
       ]
     }
   ],
@@ -125,11 +134,11 @@
       ],
       "BinarizationModes": [
         {
-          "BlockSizeX": 30,
-          "BlockSizeY": 30,
+          "BlockSizeX": 41,
+          "BlockSizeY": 41,
           "Mode": "BM_LOCAL_BLOCK",
           "EnableFillBinaryVacancy": 0,
-          "ThresholdCompensation": 15
+          "ThresholdCompensation": 10
         }
       ],
       "ConfusableCharactersCorrection": {
@@ -302,7 +311,18 @@
           "ImageParameterName": "ip_mrz",
           "StageArray": [
             {
-              "Stage": "SST_LOCALIZE_TEXT_LINES"
+                "Stage": "SST_LOCALIZE_TEXT_LINES",
+                "LocalizationModes":[
+                    {
+                        "Mode": "LM_NEURAL_NETWORK",
+                        "ModelNameArray": [
+                            "MRZLocalization"
+                        ]
+                    },
+                    {
+                        "Mode": "LM_GENERAL"
+                    }
+                ]
             }
           ]
         },
@@ -344,7 +364,18 @@
           "ImageParameterName": "ip_mrz",
           "StageArray": [
             {
-              "Stage": "SST_LOCALIZE_TEXT_LINES"
+                "Stage": "SST_LOCALIZE_TEXT_LINES",
+                "LocalizationModes":[
+                    {
+                        "Mode": "LM_NEURAL_NETWORK",
+                        "ModelNameArray": [
+                            "MRZLocalization"
+                        ]
+                    },
+                    {
+                        "Mode": "LM_GENERAL"
+                    }
+                ]
             }
           ]
         },
@@ -387,7 +418,18 @@
           "ImageParameterName": "ip_mrz",
           "StageArray": [
             {
-              "Stage": "SST_LOCALIZE_TEXT_LINES"
+                "Stage": "SST_LOCALIZE_TEXT_LINES",
+                "LocalizationModes":[
+                    {
+                        "Mode": "LM_NEURAL_NETWORK",
+                        "ModelNameArray": [
+                            "MRZLocalization"
+                        ]
+                    },
+                    {
+                        "Mode": "LM_GENERAL"
+                    }
+                ]
             }
           ]
         },
@@ -429,7 +471,18 @@
           "ImageParameterName": "ip_mrz",
           "StageArray": [
             {
-              "Stage": "SST_LOCALIZE_TEXT_LINES"
+                "Stage": "SST_LOCALIZE_TEXT_LINES",
+                "LocalizationModes":[
+                    {
+                        "Mode": "LM_NEURAL_NETWORK",
+                        "ModelNameArray": [
+                            "MRZLocalization"
+                        ]
+                    },
+                    {
+                        "Mode": "LM_GENERAL"
+                    }
+                ]
             }
           ]
         },
@@ -474,7 +527,18 @@
           "ImageParameterName": "ip_mrz",
           "StageArray": [
             {
-              "Stage": "SST_LOCALIZE_TEXT_LINES"
+                "Stage": "SST_LOCALIZE_TEXT_LINES",
+                "LocalizationModes":[
+                    {
+                        "Mode": "LM_NEURAL_NETWORK",
+                        "ModelNameArray": [
+                            "MRZLocalization"
+                        ]
+                    },
+                    {
+                        "Mode": "LM_GENERAL"
+                    }
+                ]
             }
           ]
         },
@@ -496,14 +560,38 @@
       ]
     }
   ],
+  "DocumentNormalizerTaskSettingOptions": [
+    {
+      "Name": "task-detect-document",
+      "SectionArray": [
+        {
+          "Section": "ST_DOCUMENT_DETECTION",
+          "ImageParameterName": "ip-document"
+        },
+        {
+          "Section": "ST_DOCUMENT_DESKEWING",
+          "ImageParameterName": "ip-document"
+        },
+        {
+          "Section": "ST_IMAGE_ENHANCEMENT",
+          "ImageParameterName": "ip-document"
+        }
+      ]
+    }
+  ],
   "CaptureVisionModelOptions": [
     {
       "Name": "MRZCharRecognition",
       "MaxModelInstances": 4
     },
     {
-      "Name": "MRZTextLineRecognition",
-      "MaxModelInstances": 1
+      "Name": "MRZTextLineRecognition"
+    },
+    {
+      "Name": "MRZLocalization",
+      "ModelArgs": {
+        "InputImageLongerEdge": 640
+      }
     }
   ],
   "ImageParameterOptions": [
@@ -551,6 +639,67 @@
             "Direction": "HORIZONTAL",
             "Sensitivity": 7
           }
+        }
+      ]
+    },
+    {
+      "Name": "ip-document",
+      "ApplicableStages": [
+        {
+          "Stage": "SST_DETECT_TEXT_ZONES",
+          "TextDetectionMode": {
+            "Mode": "TTDM_WORD",
+            "Direction": "HORIZONTAL",
+            "Sensitivity": 7
+          }
+        },
+        {
+          "Stage": "SST_BINARIZE_IMAGE",
+          "BinarizationModes": [
+            {
+              "Mode": "BM_LOCAL_BLOCK",
+              "BlockSizeX": 30,
+              "BlockSizeY": 30,
+              "EnableFillBinaryVacancy": 0,
+              "ThresholdCompensation": 5
+            }
+          ]
+        },
+        {
+          "Stage": "SST_BINARIZE_TEXTURE_REMOVED_GRAYSCALE",
+          "BinarizationModes": [
+            {
+              "Mode": "BM_LOCAL_BLOCK",
+              "BlockSizeX": 30,
+              "BlockSizeY": 30,
+              "EnableFillBinaryVacancy": 0,
+              "ThresholdCompensation": 5
+            }
+          ]
+        },
+        {
+          "Stage": "SST_CONVERT_TO_GRAYSCALE",
+          "ColourConversionModes": [
+            {
+              "Mode": "CICM_GENERAL"
+            },
+            {
+              "Mode": "CICM_EDGE_ENHANCEMENT"
+            },
+            {
+              "Mode": "CICM_HSV",
+              "ReferChannel": "H_CHANNEL"
+            }
+          ]
+        },
+        {
+          "Stage": "SST_DETECT_TEXTURE",
+          "TextureDetectionModes": [
+            {
+              "Mode": "TDM_GENERAL_WIDTH_CONCENTRATION",
+              "Sensitivity": 8
+            }
+          ]
         }
       ]
     }
