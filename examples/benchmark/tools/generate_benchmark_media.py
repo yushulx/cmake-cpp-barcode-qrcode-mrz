@@ -64,6 +64,31 @@ def title_slide(title, subtitle, details=None):
     return image
 
 
+def benchmark_cover_slide(summary, images, ground_truth):
+    image, draw = base_slide()
+    draw.text((105, 205), "ZXing-C++ vs. Dynamsoft Barcode Reader", font=fit_text(draw, "ZXing-C++ vs. Dynamsoft Barcode Reader", 1710, 70, True), fill=WHITE)
+    draw.text((108, 302), "BarBeR full dataset benchmark", font=font(34), fill=MUTED)
+    decoders = list(summary["decoders"].items())
+    colors = [TEAL, BLUE]
+    for index, (name, metrics) in enumerate(decoders):
+        x = 105 + index * 855
+        draw.rounded_rectangle((x, 390, x + 750, 800), 22, fill=(17, 49, 86), outline=colors[index], width=4)
+        title = "Dynamsoft Barcode Reader" if name == "dynamsoft-dbr" else "ZXing-C++"
+        draw.text((x + 42, 430), title, font=fit_text(draw, title, 660, 37, True), fill=WHITE)
+        values = [
+            ("Recall", f'{metrics["coverage_adjusted_recall"] * 100:.2f}%'),
+            ("Precision", f'{metrics["precision"] * 100:.2f}%'),
+            ("Mean", f'{metrics["mean_decode_ms"]:.2f} ms'),
+        ]
+        y = 525
+        for label, value in values:
+            draw.text((x + 42, y), label, font=font(30), fill=MUTED)
+            draw.text((x + 310, y - 12), value, font=font(44, True), fill=WHITE)
+            y += 86
+    draw.text((105, 842), f"{images:,} images | {ground_truth:,} ground truth barcodes | one measured run", font=font(30), fill=MUTED)
+    return image
+
+
 def comparison_slide(summary, images, repetitions):
     image, draw = base_slide()
     draw.text((105, 205), "Measured Results", font=font(72, True), fill=WHITE)
@@ -110,11 +135,7 @@ def main():
     frames = args.output / "video_frames"
     frames.mkdir(exist_ok=True)
     slides = [
-        title_slide(
-            "ZXing-C++ vs. Dynamsoft Barcode Reader",
-            "Barcode decoding on the public BarBeR dataset",
-            [("UNIQUE IMAGES", f"{images:,}"), ("GROUND TRUTH", f"{ground_truth:,}")],
-        ),
+        benchmark_cover_slide(summary, images, ground_truth),
         title_slide(
             "One Dataset and One Input Pipeline",
             "The same RGB888 pixels are passed to both barcode readers",
