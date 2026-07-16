@@ -2,7 +2,7 @@
 
 This project measures barcode decoding accuracy and speed for ZXing-C++ and Dynamsoft Barcode Reader on the public [BarBeR dataset](https://ditto.ing.unimore.it/barber/). Both readers receive the same RGB888 pixels and are evaluated with the same ground truth matching rules.
 
-https://github.com/user-attachments/assets/d38375b7-f57b-448e-a378-166df17ad96a
+https://github.com/user-attachments/assets/946a3a04-159b-42c9-8339-fd1556c47c13
 
 ## Dependencies
 
