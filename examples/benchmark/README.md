@@ -143,3 +143,6 @@ The HTML report contains the measured summary, method disclosure, dataset audit,
 Raw records include the decoder name, runtime version, config hash, manifest hash, repetition number, image load time, decode time, predictions, matches, and explicit errors. `results.jsonl` is the append-only raw stream. `results.json` contains the same records plus the summary in one JSON document. Generated benchmark manifests, results, reports, and license files are excluded from Git.
 
 The measured machine and build settings are recorded in `configs/benchmark_environment.json`.
+
+## Blog
+[Benchmark Barcode Reading in C++ with ZXing-C++ and Dynamsoft Barcode Reader](https://www.dynamsoft.com/codepool/benchmark-barcode-reading-cpp-zxing-dynamsoft-barcode-reader.html)
