@@ -1,0 +1,14 @@
+{
+  "formats": "All",
+  "tryHarder": true,
+  "tryRotate": true,
+  "tryInvert": true,
+  "tryDownscale": true,
+  "binarizer": "LocalAverage",
+  "isPure": false,
+  "validateOptionalChecksum": false,
+  "returnErrors": false,
+  "maxNumberOfSymbols": "dataset_max_barcodes",
+  "textMode": "Plain",
+  "eanAddOnSymbol": "Read"
+}

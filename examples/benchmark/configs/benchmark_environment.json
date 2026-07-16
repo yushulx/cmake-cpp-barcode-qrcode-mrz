@@ -1,0 +1,17 @@
+{
+  "measured_at": "2026-07-16T09:46:02+08:00",
+  "operating_system": "Microsoft Windows 11 Pro 10.0.26200 build 26200",
+  "processor": "13th Gen Intel(R) Core(TM) i5-13400F",
+  "physical_cores": 10,
+  "logical_processors": 16,
+  "memory_gb": 31.8,
+  "compiler": "Microsoft Visual C++ 19.44",
+  "architecture": "x64",
+  "configuration": "Release",
+  "benchmark_processes": 1,
+  "threads_per_decoder_task": 1,
+  "repetitions": 1,
+  "zxing_cpp_version": "3.1.0",
+  "dynamsoft_barcode_reader_version": "11.4.20.7177",
+  "dynamsoft_barcode_reader_template": "ReadBarcodes_Default"
+}

@@ -1,0 +1,15 @@
+{
+  "protocol": "protocol-v1",
+  "dataset": "BarBeR",
+  "ground_truth": "original VGG JSON annotations",
+  "image_input": "original full image, shared RGB888 pixel buffer",
+  "matching_key": ["canonical_format", "exact_normalized_payload"],
+  "location_scored": false,
+  "decoder_order": "deterministic randomized per sample and repetition",
+  "decoder_timing_excludes": ["image loading", "matching", "serialization", "report generation"],
+  "unsupported_policy": "unsupported_format",
+  "missing_payload_policy": "excluded from decoding accuracy",
+  "formats": "all formats supported by each tested decoder",
+  "per_image_hints": false,
+  "expected_barcode_count": "fixed dataset-level maximum"
+}

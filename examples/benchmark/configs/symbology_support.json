@@ -1,0 +1,25 @@
+{
+  "source_policy": "Declared against the tested ZXing-C++ API and Dynamsoft DBR 11.4 format enumerations. The list is not inferred from observed results.",
+  "symbologies": [
+    {"barber":"AZTEC","canonical":"AZTEC","zxing":{"name":"Aztec","supported":true},"dbr":{"name":"BF_AZTEC","supported":true},"both":true},
+    {"barber":"C128","canonical":"CODE_128","zxing":{"name":"Code128","supported":true},"dbr":{"name":"BF_CODE_128","supported":true},"both":true},
+    {"barber":"UCC128","canonical":"GS1_128","zxing":{"name":"Code128 (GS1 symbology identifier)","supported":true},"dbr":{"name":"BF_GS1_128","supported":true},"both":true},
+    {"barber":"C39","canonical":"CODE_39","zxing":{"name":"Code39","supported":true},"dbr":{"name":"BF_CODE_39","supported":true},"both":true},
+    {"barber":"DATAMATRIX","canonical":"DATA_MATRIX","zxing":{"name":"DataMatrix","supported":true},"dbr":{"name":"BF_DATAMATRIX","supported":true},"both":true},
+    {"barber":"EAN13","canonical":"EAN_13","zxing":{"name":"EAN13","supported":true},"dbr":{"name":"BF_EAN_13","supported":true},"both":true,"equivalence":"UPC-A may be represented as EAN-13 with one leading zero"},
+    {"barber":"EAN8","canonical":"EAN_8","zxing":{"name":"EAN8","supported":true},"dbr":{"name":"BF_EAN_8","supported":true},"both":true},
+    {"barber":"2-DIGIT","canonical":"EAN_2","zxing":{"name":"EAN2","supported":true},"dbr":{"name":"BF_NULL (reported as EAN add-on)","supported":true},"both":true,"ambiguity":"May be returned together with a parent EAN/UPC symbol"},
+    {"barber":"I2O5","canonical":"ITF","zxing":{"name":"ITF","supported":true},"dbr":{"name":"BF_ITF","supported":true},"both":true},
+    {"barber":"IATA25","canonical":"IATA_2_OF_5","zxing":{"name":null,"supported":false},"dbr":{"name":"BF_IATA_2_OF_5","supported":true},"both":false},
+    {"barber":"INTELLIGENTMAIL","canonical":"USPS_INTELLIGENT_MAIL","zxing":{"name":null,"supported":false},"dbr":{"name":"BF_USPSINTELLIGENTMAIL","supported":true},"both":false},
+    {"barber":"JAPANPOST","canonical":"JAPAN_POST","zxing":{"name":null,"supported":false},"dbr":{"name":"BF_JAPANESEPOST","supported":true},"both":false},
+    {"barber":"KIX","canonical":"KIX","zxing":{"name":null,"supported":false},"dbr":{"name":"BF_KIX","supported":true},"both":false},
+    {"barber":"PDF417","canonical":"PDF_417","zxing":{"name":"PDF417","supported":true},"dbr":{"name":"BF_PDF417","supported":true},"both":true},
+    {"barber":"POSTNET","canonical":"POSTNET","zxing":{"name":null,"supported":false},"dbr":{"name":"BF_POSTNET","supported":true},"both":false},
+    {"barber":"QR","canonical":"QR_CODE","zxing":{"name":"QRCode","supported":true},"dbr":{"name":"BF_QR_CODE","supported":true},"both":true},
+    {"barber":"ROYALMAILCODE","canonical":"ROYAL_MAIL","zxing":{"name":null,"supported":false},"dbr":{"name":"BF_RM4SCC","supported":true},"both":false},
+    {"barber":"UPCA/UPCS","canonical":"UPC_A","zxing":{"name":"UPCA","supported":true},"dbr":{"name":"BF_UPC_A","supported":true},"both":true,"equivalence":"EAN-13 with one leading zero canonicalizes to UPC-A"},
+    {"barber":"1D","canonical":"GENERIC_1D","zxing":{"name":null,"supported":false},"dbr":{"name":null,"supported":false},"both":false,"excluded":"No specific symbology"},
+    {"barber":"-1","canonical":"UNKNOWN","zxing":{"name":null,"supported":false},"dbr":{"name":null,"supported":false},"both":false,"excluded":"Invalid/unknown annotation type"}
+  ]
+}

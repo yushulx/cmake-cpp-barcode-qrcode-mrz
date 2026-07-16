@@ -1,0 +1,14 @@
+build-*/
+build/
+.playwright-cli/
+output/
+results/
+report/
+__pycache__/
+*.pyc
+audit.log
+.playwright-cli/
+output/
+manifests/barber_source_files.json
+manifests/benchmark_manifest.jsonl
+manifests/smoke_manifest.jsonl

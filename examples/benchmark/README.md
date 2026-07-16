@@ -1,114 +1,143 @@
-# Barcode Benchmark: Dynamsoft DBR vs zxing-cpp
+# C++ Barcode Reader Benchmark
 
-A C++ benchmarking tool that compares the decoding performance of [Dynamsoft Barcode Reader](https://www.dynamsoft.com/barcode-reader/overview/) and [zxing-cpp](https://github.com/zxing-cpp/zxing-cpp) on image files and directories.
+This project measures barcode decoding accuracy and speed for ZXing-C++ and Dynamsoft Barcode Reader on the public [BarBeR dataset](https://ditto.ing.unimore.it/barber/). Both readers receive the same RGB888 pixels and are evaluated with the same ground truth matching rules.
 
-## Features
+## Dependencies
 
-- Processes single images or entire directories (recursive)
-- Single-thread benchmark: runs each library multiple times per image and reports avg/min/max decode time
-- Multi-thread benchmark (optional): processes all images concurrently across N threads, reports throughput and wall-clock time
-- Tabular per-image single-thread comparison + overall summary
-- Supports common image formats: JPG, PNG, BMP, TIFF, GIF, PDF (Dynamsoft only)
-- Cross-platform CMake build (Windows, Linux, macOS)
+- CMake 3.16 or later
+- A C++20 compiler
+- Dynamsoft Capture Vision SDK in `../../dcv`
+- A valid Dynamsoft Barcode Reader license
+- Python 3 for result validation and report generation
 
-## Prerequisites
+The `zxing-cpp` directory is a Git submodule.
 
-- **CMake 3.8+**
-- **C++17 compiler** (MSVC, GCC, Clang)
-- **Dynamsoft Capture Vision SDK** — available in `../../dcv/` (relative to this project). Get a trial license from [Dynamsoft](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform).
-- **zxing-cpp** prebuilt library — the static lib (`ZXing.lib` / `libZXing.a`) must be placed in `lib/zxing-cpp/`. Headers are bundled locally in `zxing-cpp/include/`.
+## Get the Source
 
-## Project Structure
+Clone the parent repository with submodules.
 
+```powershell
+git clone --recurse-submodules https://github.com/yushulx/cmake-cpp-barcode-qrcode.git
 ```
-benchmark/
-├── CMakeLists.txt           # CMake build configuration
-├── main.cpp                 # Benchmark source code
-├── lib/
-│   └── zxing-cpp/
-│       └── ZXing.lib        # Prebuilt zxing-cpp static library
-├── zxing-cpp/
-│   └── include/             # zxing-cpp header files (local copy)
-├── stb/
-│   ├── stb_image.h          # Image loading for zxing-cpp (header-only)
-│   └── stb_image_write.h
-├── build/                   # Build output directory
-└── README.md
+
+Initialize the submodule in an existing checkout.
+
+```powershell
+git submodule update --init --recursive
+```
+
+Update ZXing-C++ when a newer revision is needed.
+
+```powershell
+git -C zxing-cpp fetch origin
+git -C zxing-cpp checkout origin/master
 ```
 
 ## Build
 
-```bash
-cd build
-cmake .. -G "Visual Studio 17 2022" -A x64
-cmake --build . --config Release
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release --target barcode_benchmark benchmark_tests
+ctest --test-dir build -C Release --output-on-failure
 ```
 
-On Linux/macOS:
+CMake builds ZXing-C++ from the checked-out submodule and copies the required Dynamsoft libraries, templates, and models next to the executable.
 
-```bash
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-cmake --build .
+## Prepare the BarBeR Dataset
+
+The expected dataset layout is:
+
+```text
+BarBeR - Dataset/
+  Annotations/VIA/
+  dataset/images/
 ```
 
-After a successful build the executable is at `build/Release/benchmark.exe` (Windows) or `build/benchmark` (Unix). The post-build step automatically copies Dynamsoft DLLs and resource files (Templates, Models) next to the executable.
+Run the audit before every published benchmark.
 
-## Usage
-
-```bash
-benchmark [--threads N] <image_or_folder> [iterations]
+```powershell
+build/Release/barcode_benchmark.exe audit `
+  --images "D:/images/public-barcode-dataset/BarBeR - Dataset/dataset/images" `
+  --annotations "D:/images/public-barcode-dataset/BarBeR - Dataset/Annotations/VIA" `
+  --output manifests
 ```
 
-- `--threads N` — (optional) run multi-threaded throughput benchmark with N threads after single-thread comparison.
-- `image_or_folder` — path to a single image file or a directory (scanned recursively).
-- `iterations` — number of decoding passes per image (default: 10). Higher values give more stable timing averages.
+The audit recursively reads every VGG JSON file, validates image availability, validates payload structure, resolves overlapping annotations, and removes exact duplicate images. The generated benchmark manifest contains only unique images with at least one reliable ground truth value.
 
-### Examples
+For the current local dataset, the audit starts from 8,748 image records and 9,818 annotations. It excludes 853 images without reliable ground truth and one exact duplicate image. The final manifest contains 7,894 unique images, 7,894 unique SHA-256 image hashes, and 8,615 ground truth barcode instances. The inventory in `manifests/barber_source_files.json` records every exclusion and the SHA-256 hash of each annotation source.
 
-Benchmark a single image with 10 iterations:
+## Run the Full Benchmark
 
-```bash
-benchmark "C:\images\QRCode.png"
+Store the Dynamsoft license in a local text file that is not committed. This checkout uses `../../license-key.txt` from the repository root.
+
+```powershell
+build/Release/barcode_benchmark.exe run `
+  --images "D:/images/public-barcode-dataset/BarBeR - Dataset/dataset/images" `
+  --manifest manifests/benchmark_manifest.jsonl `
+  --output results/full `
+  --dbr-template ReadBarcodes_Default `
+  --zxing-config configs/zxing_all_supported.json `
+  --license-key-file "../../license-key.txt" `
+  --repetitions 1
 ```
 
-Benchmark a folder with 5 iterations:
+The command is resumable. Each result key contains the sample ID, decoder, and repetition number. Existing keys are skipped safely. The raw stream is stored in `results.jsonl` so a long run can append one complete record at a time. A complete `results.json` package is also written for tools that prefer a single JSON document.
 
-```bash
-benchmark "C:\images" 5
+To compare a different DBR preset, pass `--dbr-template ReadBarcodes_SpeedFirst` or `--dbr-template ReadBarcodes_ReadRateFirst`.
+
+Decode timing starts immediately before the SDK call and ends immediately after it returns. Image loading, matching, JSON serialization, console output, and report generation are excluded. Decoder order is deterministically shuffled for every image and repetition.
+
+## Validate Results
+
+```powershell
+python tools/validate_results.py `
+  --results results/full/results.jsonl `
+  --summary results/full/summary.json `
+  --expected-images 7894 `
+  --expected-ground-truth 8615 `
+  --expected-repetitions 1
 ```
 
-Benchmark a folder with 5 iterations and 4 threads (multi-thread throughput):
+A complete result file contains 15,788 unique decoder records.
 
-```bash
-benchmark --threads 4 "C:\images" 5
+## Benchmark Results
+
+The current full run uses one repetition on 7,894 unique BarBeR images. Recall is calculated as correct ground truth matches divided by 8,615 eligible ground truth instances. Precision is calculated as correct predictions divided by evaluated predictions, where evaluated predictions are `correct + wrong_text + wrong_format + extra_result`.
+
+| Decoder | Correct | Recall | Precision | Image all-read rate | Mean decode time | Median decode time | P95 decode time |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Dynamsoft Barcode Reader 11.4.20.7177 | 7,444 / 8,615 | 86.41% | 91.44% | 86.57% | 70.08 ms | 44.99 ms | 208.51 ms |
+| ZXing-C++ 3.1.0 | 5,855 / 8,615 | 67.96% | 93.17% | 67.79% | 74.09 ms | 44.34 ms | 250.22 ms |
+
+DBR read 1,589 more ground truth barcodes in this run and improved recall by 18.44 percentage points. ZXing-C++ had 1.73 percentage points higher precision. DBR's mean decoder call was 70.08 ms versus 74.09 ms for ZXing-C++, about 5.4% lower in this run. The matching analysis found no remaining errors caused only by UPC-A or EAN-13 leading zero differences. DBR `CODE39EXTENDED` output is treated as `CODE_39` when the payload matches.
+
+## Generate the Report
+
+```powershell
+python tools/generate_html_report.py `
+  --inventory manifests/barber_source_files.json `
+  --environment configs/benchmark_environment.json `
+  --results results/full/results.jsonl `
+  --results-json results/full/results.json `
+  --matching-analysis results/full/matching_analysis.json `
+  --summary results/full/summary.json `
+  --output report/index.html
 ```
 
-### Sample Output (multi-threaded)
+The HTML report contains the measured summary, method disclosure, dataset audit, matching analysis, and per-image raw records.
 
-With `--threads 4`, the multi-thread benchmark section is appended after the single-thread summary:
+## Matching Rules
 
-```
-=============================================================
- Single-Thread Summary (44 image(s), 3 iterations each)
-=============================================================
-| Library    |     Total Avg|      Total Bc|
-|------------|--------------|--------------|
-| Dynamsoft  |      3326.84ms|           353|
-| zxing-cpp  |      1960.86ms|           232|
+- Ground truth and predictions are matched one to one as multisets
+- The key is canonical barcode format plus exact normalized payload
+- UPC-A and the equivalent zero-prefixed EAN-13 value are treated as equal
+- DBR `CODE39EXTENDED` output is treated as `CODE_39`
+- Barcode location is not part of the score
+- Unsupported formats remain visible in coverage-adjusted metrics
+- Decoder errors and input pipeline errors are never counted as no-read results
 
-=============================================================
---- Multi-Threaded Benchmark (4 threads) ---
-| Library    | Wall Time (s)|     Decodes/s| Total Decodes|      Barcodes|
-|------------|--------------|--------------|--------------|--------------|
-| Dynamsoft  |         3.726|          35.4|           132|           353|
-| zxing-cpp  |         2.368|          54.5|           129|           232|
-Speedup:  Dynamsoft 2.93x,  zxing-cpp 2.53x
-```
+## Reproducibility
 
-## Notes
+Raw records include the decoder name, runtime version, config hash, manifest hash, repetition number, image load time, decode time, predictions, matches, and explicit errors. `results.jsonl` is the append-only raw stream. `results.json` contains the same records plus the summary in one JSON document. Generated benchmark manifests, results, reports, and license files are excluded from Git.
 
-- **PDF files**: Only Dynamsoft can process PDFs. zxing-cpp (via stb_image) does not support PDF input — those rows show "N/A".
-- **License**: The Dynamsoft trial license key is embedded in the source. Replace it with your own license for production use.
-- **Fair comparison**: zxing-cpp decodes from pre-loaded pixel data while Dynamsoft reads from file each iteration (its native API). Both timings include the full decoding pipeline.
-- **Multi-threading**: Each thread creates its own Dynamsoft `CCaptureVisionRouter` instance since the SDK is not thread-safe for concurrent decode calls on a single router. zxing-cpp's `ReadBarcodes` is thread-safe and each thread loads its own image data independently.
+The measured machine and build settings are recorded in `configs/benchmark_environment.json`.
