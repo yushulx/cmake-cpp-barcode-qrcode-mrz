@@ -86,6 +86,9 @@ endif()
 add_executable(barcode_benchmark src/main.cpp)
 target_link_libraries(barcode_benchmark PRIVATE benchmark_core benchmark_decoders)
 
+add_executable(rematch_results src/rematch.cpp)
+target_link_libraries(rematch_results PRIVATE benchmark_core)
+
 if(WIN32)
     add_custom_command(TARGET barcode_benchmark POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

@@ -55,12 +55,70 @@ std::string canonicalFormat(std::string_view value)
     return it == map.end() ? normalized : it->second;
 }
 
+void replaceAll(std::string& value, std::string_view from, std::string_view to)
+{
+    if (from.empty()) return;
+    std::size_t pos = 0;
+    while ((pos = value.find(from, pos)) != std::string::npos) {
+        value.replace(pos, from.size(), to);
+        pos += to.size();
+    }
+}
+
+std::string unescapeHtmlEntities(std::string value)
+{
+    replaceAll(value, "&amp;", "&");
+    replaceAll(value, "&lt;", "<");
+    replaceAll(value, "&gt;", ">");
+    replaceAll(value, "&quot;", "\"");
+    replaceAll(value, "&#39;", "'");
+    replaceAll(value, "&apos;", "'");
+    return value;
+}
+
+std::string rstripNewlines(std::string value)
+{
+    while (!value.empty() && (value.back() == '\n' || value.back() == '\r'))
+        value.pop_back();
+    return value;
+}
+
+void stripLeadingGs1Marker(std::string& value)
+{
+    for (;;) {
+        if (value.rfind("{GS}", 0) == 0) {
+            value.erase(0, 4);
+            continue;
+        }
+        if (value.rfind("{FNC1}", 0) == 0) {
+            value.erase(0, 6);
+            continue;
+        }
+        if (!value.empty() && static_cast<unsigned char>(value.front()) == 0x1d) {
+            value.erase(value.begin());
+            continue;
+        }
+        break;
+    }
+}
+
+bool isUnreliablePlaceholder(std::string_view payload)
+{
+    return payload == "^";
+}
+
 std::string normalizedPayload(std::string_view format, std::string_view payload)
 {
-    std::string result(payload);
+    std::string result = rstripNewlines(unescapeHtmlEntities(std::string(payload)));
+    if (result.rfind("\\000001", 0) == 0)
+        result.erase(0, 7);
     const auto canonical = canonicalFormat(format);
     if (canonical == "UPC_A" && result.size() == 13 && result.front() == '0')
         result.erase(result.begin());
+    if (canonical == "CODE_39" && result.size() >= 2 && result.front() == '*' && result.back() == '*')
+        result = result.substr(1, result.size() - 2);
+    if (canonical == "CODE_128" || canonical == "GS1_128")
+        stripLeadingGs1Marker(result);
     return result;
 }
 

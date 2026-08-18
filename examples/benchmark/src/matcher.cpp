@@ -44,6 +44,7 @@ std::vector<MatchItem> matchResults(const std::vector<GroundTruth>& truth,
     for (std::size_t ti = 0; ti < truth.size(); ++ti) {
         const auto& gt = truth[ti];
         if (!gt.decode_eligible) continue;
+        if (isUnreliablePlaceholder(gt.text)) continue;
         if (!isFormatSupported(decoder, gt.format)) {
             output.push_back({ti, std::nullopt, Outcome::UnsupportedFormat});
             continue;

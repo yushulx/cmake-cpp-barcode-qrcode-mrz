@@ -2,7 +2,7 @@
 
 This project measures barcode decoding accuracy and speed for ZXing-C++ and Dynamsoft Barcode Reader on the public [BarBeR dataset](https://ditto.ing.unimore.it/barber/). Both readers receive the same RGB888 pixels and are evaluated with the same ground truth matching rules.
 
-https://github.com/user-attachments/assets/946a3a04-159b-42c9-8339-fd1556c47c13
+<video src="assets/barcode-benchmark-video.mp4" poster="assets/barcode-benchmark-video-poster.png" controls muted width="100%"></video>
 
 ## Dependencies
 
@@ -100,18 +100,18 @@ python tools/validate_results.py `
   --expected-repetitions 1
 ```
 
-A complete result file contains 15,788 unique decoder records.
+`--expected-ground-truth 8615` is the audited annotation count stored in each record. Scoring excludes 204 `^` placeholders, so recall uses 8,411. A complete result file contains 15,788 unique decoder records.
 
 ## Benchmark Results
 
-The current full run uses one repetition on 7,894 unique BarBeR images. Recall is calculated as correct ground truth matches divided by 8,615 eligible ground truth instances. Precision is calculated as correct predictions divided by evaluated predictions, where evaluated predictions are `correct + wrong_text + wrong_format + extra_result`.
+The current full run uses one repetition on 7,894 unique BarBeR images. Recall is calculated as correct ground truth matches divided by 8,411 scored ground truth instances. The audit still records 8,615 original eligible annotations; 204 of those payloads are the unreliable placeholder `^` and are now excluded from scoring. Precision is calculated as correct predictions divided by evaluated predictions, where evaluated predictions are `correct + wrong_text + wrong_format + extra_result`.
 
 | Decoder | Correct | Recall | Precision | Image all-read rate | Mean decode time | Median decode time | P95 decode time |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Dynamsoft Barcode Reader 11.4.20.7177 | 7,444 / 8,615 | 86.41% | 91.44% | 86.57% | 70.08 ms | 44.99 ms | 208.51 ms |
-| ZXing-C++ 3.1.0 | 5,855 / 8,615 | 67.96% | 93.17% | 67.79% | 74.09 ms | 44.34 ms | 250.22 ms |
+| Dynamsoft Barcode Reader 11.4.20.7177 | 7,804 / 8,411 | 92.78% | 95.86% | 92.80% | 70.08 ms | 44.99 ms | 208.51 ms |
+| ZXing-C++ 3.1.0 | 6,019 / 8,411 | 71.56% | 95.78% | 71.42% | 74.09 ms | 44.34 ms | 250.22 ms |
 
-DBR read 1,589 more ground truth barcodes in this run and improved recall by 18.44 percentage points. ZXing-C++ had 1.73 percentage points higher precision. DBR's mean decoder call was 70.08 ms versus 74.09 ms for ZXing-C++, about 5.4% lower in this run. The matching analysis found no remaining errors caused only by UPC-A or EAN-13 leading zero differences. DBR `CODE39EXTENDED` output is treated as `CODE_39` when the payload matches.
+DBR read 1,785 more ground truth barcodes in this run and improved recall by 21.22 percentage points. Precision is now essentially tied (DBR 95.86%, ZXing-C++ 95.78%). DBR's mean decoder call was 70.08 ms versus 74.09 ms for ZXing-C++, about 5.4% lower in this run. The rematch recovered CODE_39 start/stop asterisks and CODE_128 `{GS}` markers for both decoders; ZXing-C++ gained 164 correct matches and DBR gained 360. The matching analysis found no remaining errors caused only by UPC-A or EAN-13 leading zero differences. DBR `CODE39EXTENDED` output is treated as `CODE_39` when the payload matches.
 
 ## Generate the Report
 
@@ -128,15 +128,35 @@ python tools/generate_html_report.py `
 
 The HTML report contains the measured summary, method disclosure, dataset audit, matching analysis, and per-image raw records.
 
+Regenerate the cover image, poster, and slide video:
+
+```powershell
+python tools/generate_benchmark_media.py `
+  --inventory manifests/barber_source_files.json `
+  --summary results/full/summary.json `
+  --output report/media
+```
+
 ## Matching Rules
 
 - Ground truth and predictions are matched one to one as multisets
 - The key is canonical barcode format plus exact normalized payload
 - UPC-A and the equivalent zero-prefixed EAN-13 value are treated as equal
+- CODE_39 start/stop asterisks are stripped before scoring
+- CODE_128 / GS1-128 leading `{GS}`, `{FNC1}`, and ASCII GS markers are stripped before scoring
+- HTML entities, trailing newlines, and a leading `\000001` escape are normalized before scoring
+- Ground truth payload `^` is treated as an unreliable placeholder and excluded from scoring
 - DBR `CODE39EXTENDED` output is treated as `CODE_39`
 - Barcode location is not part of the score
 - Unsupported formats remain visible in coverage-adjusted metrics
 - Decoder errors and input pipeline errors are never counted as no-read results
+
+To re-score an existing `results.jsonl` after a matching-rule change, without re-running the decoders:
+
+```powershell
+cmake --build build --config Release --target rematch_results
+build/Release/rematch_results.exe --results results/full/results.jsonl --output results/full
+```
 
 ## Reproducibility
 

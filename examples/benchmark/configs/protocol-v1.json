@@ -4,6 +4,15 @@
   "ground_truth": "original VGG JSON annotations",
   "image_input": "original full image, shared RGB888 pixel buffer",
   "matching_key": ["canonical_format", "exact_normalized_payload"],
+  "payload_normalization": [
+    "upc_a_leading_zero",
+    "code39_start_stop_asterisks",
+    "code128_leading_gs1_marker",
+    "html_entity_unescape",
+    "trailing_newline_strip",
+    "leading_nul_escape_strip"
+  ],
+  "unreliable_placeholder_policy": "ground truth payload '^' is excluded from scoring",
   "location_scored": false,
   "decoder_order": "deterministic randomized per sample and repetition",
   "decoder_timing_excludes": ["image loading", "matching", "serialization", "report generation"],
