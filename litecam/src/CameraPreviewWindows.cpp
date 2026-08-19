@@ -1,6 +1,21 @@
 #include "CameraPreview.h"
 #include <iostream>
 
+#ifdef _WIN32
+#include <windows.h>
+static std::wstring Utf8ToWide(const char *text)
+{
+    if (!text)
+        return L"";
+    int len = MultiByteToWideChar(CP_UTF8, 0, text, -1, nullptr, 0);
+    if (len <= 0)
+        return L"";
+    std::wstring wide(len - 1, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, text, -1, &wide[0], len);
+    return wide;
+}
+#endif
+
 CameraWindow::CameraWindow(int w, int h, const char *title)
     : width(w), height(h), hwnd(nullptr), hdc(nullptr)
 {
@@ -8,13 +23,17 @@ CameraWindow::CameraWindow(int w, int h, const char *title)
     this->title = new char[strlen(title) + 1];
     strcpy_s(this->title, strlen(title) + 1, title);
 
+#ifdef _WIN32
+    wideTitle = Utf8ToWide(title);
+#endif
+
     hInstance = GetModuleHandle(nullptr);
 
     // Initialize window class
     wc = {};
     wc.lpfnWndProc = WindowProc; // Static window procedure
     wc.hInstance = hInstance;
-    wc.lpszClassName = "CameraWindowClass";
+    wc.lpszClassName = L"CameraWindowClass";
 }
 
 CameraWindow::~CameraWindow()
@@ -29,7 +48,7 @@ CameraWindow::~CameraWindow()
     {
         DestroyWindow(hwnd);
     }
-    UnregisterClass("CameraWindowClass", hInstance);
+    UnregisterClassW(L"CameraWindowClass", hInstance);
 }
 
 void CameraWindow::DrawText(const std::string &text, int x, int y, int fontSize, const Color &color)
@@ -86,15 +105,16 @@ LRESULT CALLBACK CameraWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, L
 bool CameraWindow::Create()
 {
     // Register the window class
-    if (!RegisterClass(&wc))
+    if (!RegisterClassW(&wc))
     {
         std::cerr << "Failed to register window class." << std::endl;
         return false;
     }
 
-    // Create the window
-    hwnd = CreateWindowEx(
-        0, "CameraWindowClass", title, WS_OVERLAPPEDWINDOW,
+    // Create the window with a UTF-16 title so non-ASCII characters
+    // (e.g. Chinese, Japanese) are displayed correctly in the title bar
+    hwnd = CreateWindowExW(
+        0, L"CameraWindowClass", wideTitle.c_str(), WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, width, height,
         nullptr, nullptr, hInstance, nullptr);
 

@@ -55,8 +55,9 @@ private:
 
     HWND hwnd;
     HDC hdc;
-    WNDCLASS wc;
+    WNDCLASSW wc;
     HINSTANCE hInstance;
+    std::wstring wideTitle; // UTF-16 title for the window title bar
 #elif __linux__
     // Add Linux-specific members (e.g., X11 display and drawable)
     Display *display;
