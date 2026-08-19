@@ -21,13 +21,13 @@
 #include "DynamsoftCore.h"
 #include "DynamsoftLicense.h"
 #include "DynamsoftBarcodeReader.h"
-//#if !defined(ONLY_DBR)
+#ifndef ONLY_DBR
 #include "DynamsoftLabelRecognizer.h"
 #include "DynamsoftDocumentNormalizer.h"
 #include "DynamsoftCodeParser.h"
-//#endif
+#endif
 
-#define DCV_VERSION                  "3.4.20.7177"
+#define DCV_VERSION                  "3.6.10.8373"
 
 /**Enumeration section*/
 
@@ -111,7 +111,9 @@ typedef struct tagSimplifiedCaptureVisionSettings
 	/**
 	 * Specifies the settings for label recognition.
 	 */
+#ifndef ONLY_DBR
 	SimplifiedLabelRecognizerSettings labelSettings;
+#endif
 	/**
 	 * @brief Minimum time interval (in milliseconds) allowed between consecutive image captures.
 	 *
@@ -132,7 +134,9 @@ typedef struct tagSimplifiedCaptureVisionSettings
 	/**
 	 * Specifies the settings for document normalization.
 	 */
+#ifndef ONLY_DBR
 	SimplifiedDocumentNormalizerSettings documentSettings;
+#endif
 
 	/**
 	 * Reserved for future use.
@@ -153,6 +157,10 @@ class CaptureVisionInner;
 
 namespace dynamsoft
 {
+	namespace utility
+	{
+		class CFileFetcher;
+	}
 	namespace cvr
 	{
 #pragma pack(push)
@@ -244,6 +252,7 @@ namespace dynamsoft
 			 * @return Returns a pointer to the CRecognizedTextLinesResult object containing the recognized text line items.
 			 * @remark Do not forget to release the memory pointed to by the returned pointer.
 			 */
+#ifndef ONLY_DBR
 			virtual dlr::CRecognizedTextLinesResult* GetRecognizedTextLinesResult() const = 0;
 
 			/**
@@ -261,6 +270,7 @@ namespace dynamsoft
 			 * @remark Do not forget to release the memory pointed to by the returned pointer.
 			 */
 			virtual dcp::CParsedResult* GetParsedResult() const = 0;
+#endif
 
 			/**
 			 * Add a specific item to the array in the captured result.
@@ -385,6 +395,7 @@ namespace dynamsoft
 			* @param [in] info A pointer to the IntermediateResultExtraInfo object that contains the extra info of intermediate result.
 			*
 			*/
+#ifndef ONLY_DBR
 			virtual void OnLocalizedTextLinesReceived(dlr::intermediate_results::CLocalizedTextLinesUnit *pResult, const IntermediateResultExtraInfo* info);
 
 			/**
@@ -413,6 +424,7 @@ namespace dynamsoft
 			*
 			*/
 			virtual void OnDeskewedImageReceived(ddn::intermediate_results::CDeskewedImageUnit *pResult, const IntermediateResultExtraInfo* info);
+#endif
 
 			/**
 			* Called when colour image units have been received.
@@ -547,6 +559,7 @@ namespace dynamsoft
 			* @param [in] info A pointer to the IntermediateResultExtraInfo object that contains the extra info of intermediate result.
 			*
 			*/
+#ifndef ONLY_DBR
 			virtual void OnLongLinesUnitReceived(ddn::intermediate_results::CLongLinesUnit *pResult, const IntermediateResultExtraInfo* info);
 
 			/**
@@ -566,7 +579,7 @@ namespace dynamsoft
 			*
 			*/
 			virtual void OnCandidateQuadEdgesUnitReceived(ddn::intermediate_results::CCandidateQuadEdgesUnit *pResult, const IntermediateResultExtraInfo* info);
-
+#endif
 			/**
 			* Called when candidate barcode zones units have been received.
 			*
@@ -610,6 +623,7 @@ namespace dynamsoft
 			* @param [in] info A pointer to the IntermediateResultExtraInfo object that contains the extra info of intermediate result.
 			*
 			*/
+#ifndef ONLY_DBR
 			virtual void OnRawTextLinesUnitReceived(dlr::intermediate_results::CRawTextLinesUnit *pResult, const IntermediateResultExtraInfo* info);
 
 			/**
@@ -629,6 +643,7 @@ namespace dynamsoft
 			*
 			*/
 			virtual void OnEnhancedImageReceived(ddn::intermediate_results::CEnhancedImageUnit *pResult, const IntermediateResultExtraInfo* info);
+#endif
 
 			/**
 			* Called when all tasks for the target ROI are completed and the results are deduplicated.
@@ -658,7 +673,11 @@ namespace dynamsoft
 			*
 			* @remark It is for internal calls of function modules such as DynamsoftBarcodeReader, DynamsoftLabelRecognizer and DynamsoftDocumentNormalizer.
 			*/
-			virtual void OnTaskResultsReceivedInner(CIntermediateResult *pResult, const IntermediateResultExtraInfo* info) final;
+			virtual void OnTaskResultsReceivedInner(CIntermediateResult* pResult, const IntermediateResultExtraInfo* info) final;
+
+			virtual void OnSectionStarted(CIntermediateResultUnit* pUnit, const IntermediateResultExtraInfo* info) final;
+
+			virtual void OnBarcodeDecodingSectionStarted(dbr::intermediate_results::CLocalizedBarcodesUnit* pResult, const IntermediateResultExtraInfo* info);
 		};
 
 		/**
@@ -778,6 +797,7 @@ namespace dynamsoft
 			* @param [in] pResult The recognized text lines result.
 			*
 			*/
+#ifndef ONLY_DBR
 			virtual void OnRecognizedTextLinesReceived(dlr::CRecognizedTextLinesResult* pResult);
 
 			/**
@@ -795,6 +815,7 @@ namespace dynamsoft
 			*
 			*/
 			virtual void OnParsedResultsReceived(dcp::CParsedResult* pResult);
+#endif
 
 		};
 
@@ -865,6 +886,7 @@ namespace dynamsoft
 			* @param [in] pResult The recognized text lines result.
 			*
 			*/
+#ifndef ONLY_DBR
 			virtual void OnRecognizedTextLinesReceived(dlr::CRecognizedTextLinesResult* pResult);
 
 			/**
@@ -882,6 +904,7 @@ namespace dynamsoft
 			*
 			*/
 			virtual void OnParsedResultsReceived(dcp::CParsedResult* pResult);
+#endif
 
 			virtual void ClearStatus();
 
@@ -1039,7 +1062,9 @@ namespace dynamsoft
 			*
 			* @return Returns the buffered character items.
 			*/
+#ifndef ONLY_DBR
 			virtual dlr::CBufferedCharacterItemSet* GetBufferedCharacterItemSet() const = 0;
+#endif
 		};
 
 		/**
@@ -1196,6 +1221,9 @@ namespace dynamsoft
 			*
 			*/
 			CCapturedResultArray* CaptureMultiPages(const unsigned char* fileBytes, int fileSize, const char* templateName = "");
+			 
+
+			CCapturedResultArray* CaptureMultiPages(utility::CFileFetcher* fileFetcher,  const char* templateName = "");
 
 			/**
 			* Sets an image source to provide images for consecutive processing.
@@ -1404,7 +1432,6 @@ namespace dynamsoft
 			*                               If the value is outside the range [0, 256], it will be treated as 0 (default).
 			*/
 			static void SetGlobalIntraOpNumThreads(int intraOpNumThreads = 0);
-
 		private:
 			CCaptureVisionRouter(const CCaptureVisionRouter& r) = delete;
 			CCaptureVisionRouter& operator=(const CCaptureVisionRouter& r) = delete;

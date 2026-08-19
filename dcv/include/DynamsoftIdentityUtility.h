@@ -13,7 +13,7 @@
 #endif
 
 #include "DynamsoftCaptureVisionRouter.h"
-#define ID_UTILITY_VERSION  "1.0.10.6913"
+#define ID_UTILITY_VERSION  "1.6.10.8373"
 
 using namespace dynamsoft::dbr;
 using namespace dynamsoft::basic_structures;
@@ -62,6 +62,28 @@ namespace dynamsoft {
                 const CDetectedQuadsUnit* detectedQuadsUnit,
                 const CDeskewedImageUnit* deskewedImageUnit,
                 CQuadrilateral& portraitZone);
+
+            /**
+             * Finds the location of the portrait zone on an identity document.
+             *
+             * @param [in] scaledColourImgUnit The scaled colour image unit containing the source image.
+             * @param [in] localizedTextLinesUnit The localized text lines unit containing MRZ/text regions.
+             * @param [in] recognizedTextLinesUnit The recognized text lines unit for document type identification.
+             * @param [in] detectedQuadsUnit The detected quads unit containing document boundaries.
+             * @param [in] deskewedImageUnit The deskewed image unit for coordinate transformation.
+             * @param [out] portraitZone The output quadrilateral representing the portrait zone location.
+             *                           Returns an empty quadrilateral if not found.
+			 * @param [out] isBlankPortrait A boolean indicating whether the portrait zone is considered blank.
+             *
+             * @return Returns 0 if successful, otherwise returns an error code.
+             */
+            int FindPortraitZone(const CScaledColourImageUnit* scaledColourImgUnit,
+                const CLocalizedTextLinesUnit* localizedTextLinesUnit,
+                const CRecognizedTextLinesUnit* recognizedTextLinesUnit,
+                const CDetectedQuadsUnit* detectedQuadsUnit,
+                const CDeskewedImageUnit* deskewedImageUnit,
+                CQuadrilateral& portraitZone,
+                bool& isBlankPortrait);
         };
     }
 }
