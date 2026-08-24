@@ -3,3 +3,8 @@ build
 .vs
 Debug
 .DS_Store
+
+# Runtime resources auto-copied by examples/ctypes/dcv.py next to the DLLs
+dcv/lib/win/Models/
+dcv/lib/win/Templates/
+
