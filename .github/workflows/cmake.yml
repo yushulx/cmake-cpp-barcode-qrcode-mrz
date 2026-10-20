@@ -5,96 +5,94 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
-  # arm32_build:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3  
-    
-  #   - name: Set up QEMU
-  #     uses: docker/setup-qemu-action@v2
-        
-  #   - name: CMake build and run
-  #     run: |
-  #       docker run --platform linux/arm/v7 --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp arm32v7/gcc bash -c "apt update && apt install -y cmake; mkdir build && cmake -B build && cmake --build build --config ${{env.BUILD_TYPE}} && cmake --install build; ./dist/main ./images/AllSupportedBarcodeTypes.png ./license-key.txt"
-        
-  #   - name: Archive Release
-  #     uses: thedoctor0/zip-release@main
-  #     with:
-  #       type: 'zip'
-  #       filename: arm32.zip
-  #       exclusions: '*.git* /*node_modules/* .editorconfig'
-  #       path: ${{github.workspace}}/dist
-
-  #   - uses: actions/upload-artifact@v2
-  #     with:
-  #       path: ./*.zip
-
-  # arm64_build:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3  
-    
-  #   - name: Set up QEMU
-  #     uses: docker/setup-qemu-action@v2
-        
-  #   - name: CMake build and run
-  #     run: |
-  #       docker run --platform linux/arm64/v8 --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp arm64v8/gcc bash -c "apt update && apt install -y cmake; mkdir build && cmake -B build && cmake --build build --config ${{env.BUILD_TYPE}} && cmake --install build; ./dist/main ./images/AllSupportedBarcodeTypes.png ./license-key.txt"
-        
-  #   - name: Archive Release
-  #     uses: thedoctor0/zip-release@main
-  #     with:
-  #       type: 'zip'
-  #       filename: arm64.zip
-  #       exclusions: '*.git* /*node_modules/* .editorconfig'
-  #       path: ${{github.workspace}}/dist
-
-  #   - uses: actions/upload-artifact@v2
-  #     with:
-  #       path: ./*.zip
-
-  build:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    name: x86_64 build on ${{ matrix.os }}
+  build-and-test:
+    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            name: Linux x64
+            generator: Unix Makefiles
+            configure_args: ""
+            runtime_dir: ""
+            executable: main
+          - os: windows-latest
+            name: Windows x64
+            generator: Visual Studio 17 2022
+            configure_args: "-A x64"
+            runtime_dir: /Release
+            executable: main.exe
+          - os: macos-latest
+            name: macOS arm64
+            generator: Unix Makefiles
+            configure_args: ""
+            runtime_dir: ""
+            executable: main
 
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -S ${{ github.workspace }}/examples/command-line -B ${{github.workspace}}/examples/command-line/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+    - uses: actions/checkout@v4
 
-    - name: Build command line program
-      # Build your program with the given configuration
+    - name: Show toolchain
+      shell: bash
       run: |
-        cmake --build ${{github.workspace}}/examples/command-line/build --config ${{env.BUILD_TYPE}}
-        # cmake --install ${{github.workspace}}/examples/command-line/build
+        cmake --version
+        echo "CPU: $(uname -m)"
 
-    # - name: Test
-    #   working-directory: ${{github.workspace}}/examples/command-line/dist
-    #   run: ./main  ../../../../images/AllSupportedBarcodeTypes.png ../../../../license-key.txt
-        
-    # - name: Archive Release
-    #   uses: thedoctor0/zip-release@main
-    #   with:
-    #     type: 'zip'
-    #     filename: ${{ matrix.os }}.zip
-    #     exclusions: '*.git* /*node_modules/* .editorconfig'
-    #     path: ${{github.workspace}}/dist
+    - name: Configure command line example
+      shell: bash
+      run: >
+        cmake -S "${{ github.workspace }}/examples/command-line"
+        -B "${{ github.workspace }}/build/command-line"
+        -G "${{ matrix.generator }}" ${{ matrix.configure_args }}
+        -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
 
-    # - uses: actions/upload-artifact@v2
-    #   with:
-    #     path: ./*.zip
+    - name: Build command line example
+      shell: bash
+      run: cmake --build "${{ github.workspace }}/build/command-line" --config ${{ env.BUILD_TYPE }} --parallel
+
+    - name: Run command line example
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        BIN="build/command-line${{ matrix.runtime_dir }}/${{ matrix.executable }}"
+        echo "Running $BIN"
+        "$BIN" images/AllSupportedBarcodeTypes.png | tee command-line-output.txt
+        # The sample image contains 18 barcodes; a loaded SDK decodes them all.
+        grep -q "Decoded 1[0-9] barcodes" command-line-output.txt
+
+    - name: Configure tests
+      shell: bash
+      run: >
+        cmake -S "${{ github.workspace }}/tests"
+        -B "${{ github.workspace }}/build/tests"
+        -G "${{ matrix.generator }}" ${{ matrix.configure_args }}
+        -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+
+    - name: Build tests
+      shell: bash
+      run: cmake --build "${{ github.workspace }}/build/tests" --config ${{ env.BUILD_TYPE }} --parallel
+
+    - name: Run tests
+      shell: bash
+      env:
+        # Optional: override the bundled demo license with a repository secret.
+        DYNAMSOFT_LICENSE_KEY: ${{ secrets.DYNAMSOFT_LICENSE_KEY }}
+      run: ctest --test-dir "${{ github.workspace }}/build/tests" -C ${{ env.BUILD_TYPE }} --output-on-failure
+
+    - name: Upload test logs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-logs-${{ matrix.os }}
+        path: |
+          command-line-output.txt
+          build/tests/Testing/Temporary/LastTest.log
+        if-no-files-found: ignore
