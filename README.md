@@ -1,7 +1,7 @@
 # Building 1D/2D Barcode Reader with C++ and CMake
 This repository contains examples demonstrating how to utilize the **Dynamsoft Barcode Reader SDK** to build barcode and QR code detection applications with C++ and CMake on **Windows**, **Linux**, **macOS**, and **Raspberry Pi OS**.
 
-The bundled SDK is **Dynamsoft Capture Vision 3.6.40** (Dynamsoft Barcode Reader 11.6.40) under [`dcv/`](./dcv). `dcv/lib/mac` ships universal binaries with the per-architecture builds in `dcv/lib/mac/arm64` and `dcv/lib/mac/x64`, and `dcv/lib/linux` covers both `x64` and `arm64`.
+The bundled SDK is **Dynamsoft Capture Vision 3.6.50** (Dynamsoft Barcode Reader 11.6.50) under [`dcv/`](./dcv). `dcv/lib/mac` ships universal binaries, and `dcv/lib/linux` covers both `x64` and `arm64`.
 
 ## Prerequisites
 - Obtain a [30-day free trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) for Dynamsoft Barcode Reader.

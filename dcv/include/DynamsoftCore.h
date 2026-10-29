@@ -1,5 +1,5 @@
 #pragma once
-#define DYNAMSOFT_CORE_VERSION "4.6.40.9167"
+#define DYNAMSOFT_CORE_VERSION "4.6.50.9329"
 
 /**Enumeration section*/
 
