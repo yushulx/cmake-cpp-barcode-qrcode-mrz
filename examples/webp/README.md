@@ -7,7 +7,7 @@ This repository provides examples showcasing how to easily decode QR codes and o
     - Python SDK
     
         ```bash
-        pip install dbr opencv-python
+        pip install "dynamsoft-barcode-reader-bundle==11.6.5000" opencv-python
         ```
 - [libwebp-1.2.1](https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.1.tar.gz)
 
