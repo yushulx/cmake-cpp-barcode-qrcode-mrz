@@ -108,13 +108,13 @@ The current full run uses one repetition on 7,894 unique BarBeR images. Recall i
 
 | Decoder | Correct | Recall | Precision | Wrong reads | No read | Mean decode time | Median decode time | P95 decode time |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Dynamsoft Barcode Reader 11.6.50.9329 | 7,807 / 8,411 | 92.82% | 95.85% | 92 (1.09%) | 512 (6.09%) | 58.04 ms | 40.26 ms | 159.74 ms |
-| ZXing-C++ 3.1.1 | 6,031 / 8,411 | 71.70% | 95.79% | 100 (1.19%) | 2,280 (27.11%) | 496.79 ms | 312.07 ms | 1489.25 ms |
+| Dynamsoft Barcode Reader 11.6.50.9329 | 7,806 / 8,411 | 92.81% | 95.85% | 92 (1.09%) | 513 (6.10%) | 57.09 ms | 39.52 ms | 157.41 ms |
+| ZXing-C++ 3.1.1 | 6,031 / 8,411 | 71.70% | 95.79% | 100 (1.19%) | 2,280 (27.11%) | 69.90 ms | 44.73 ms | 227.58 ms |
 
 Failures are split into **wrong reads** (`wrong_text + wrong_format`) and **no read** (`not_found + unsupported_format + decoder_error`), so correct + wrong reads + no read equals the 8,411 scored ground-truth instances. Extra results beyond the ground truth affect precision, not this split. `image_all_read_rate` is retained in `summary.json` only as a diagnostic.
 
 
-DBR read 1,776 more ground truth barcodes in this run, a lead of 21.12 percentage points in recall and 0.06 points in precision. DBR also produced 512 no-reads against 2,280 for ZXing-C++, and 92 wrong reads against 100. Decode times for the two engines are not directly comparable here: the ZXing-C++ configuration enables every supported format with `tryHarder`/`tryRotate`/`tryInvert`/`tryDownscale`, while DBR uses the `ReadBarcodes_Default` preset. DBR `CODE39EXTENDED` output is treated as `CODE_39` when the payload matches.
+DBR read 1,775 more ground truth barcodes in this run, a lead of 21.10 percentage points in recall and 0.06 points in precision. DBR also produced 513 no-reads against 2,280 for ZXing-C++, and 92 wrong reads against 100. DBR's mean decoder call was 57.09 ms versus 69.90 ms for ZXing-C++, about 18.3% lower in this run. DBR `CODE39EXTENDED` output is treated as `CODE_39` when the payload matches.
 
 The [Python](https://www.dynamsoft.com/codepool/benchmark-barcode-reading-python-zxing-dynamsoft-barcode-reader.html) and [JavaScript](https://www.dynamsoft.com/codepool/benchmark-barcode-reading-javascript-zxing-wasm-dynamsoft-barcode-reader.html) benchmarks run the identical manifest on DBR 11.6.5000, so the three projects form a same-version cross-runtime comparison.
 
