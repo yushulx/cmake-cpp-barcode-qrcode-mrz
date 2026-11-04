@@ -203,6 +203,9 @@ void generateSummary(const std::filesystem::path& jsonl, const std::filesystem::
             {"common_format_recall_ci95",{common_interval.first,common_interval.second}},
             {"supported_format_recall",supported_denominator ? double(c.correct)/supported_denominator : 0.0},
             {"precision",precision},{"f1",precision+recall?2.0*precision*recall/(precision+recall):0.0},
+            // Ground-truth failure split: wrong reads vs no read.
+            {"wrong_reads",outcomeCount("wrong_text")+outcomeCount("wrong_format")},
+            {"no_read",outcomeCount("not_found")+outcomeCount("unsupported_format")+outcomeCount("decoder_error")},
             {"image_all_read_rate",c.records?double(c.image_all_read)/c.records:0.0},
             {"by_format",c.by_format},{"by_source",c.by_source},
             {"mean_decode_ms",c.records ? double(c.decode_ns)/c.records/1e6 : 0.0},

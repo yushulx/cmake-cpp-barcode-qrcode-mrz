@@ -12,7 +12,7 @@ https://github.com/user-attachments/assets/c2996e2c-e05e-4d2a-b1b4-f41b0d71c6c6
 - A valid Dynamsoft Barcode Reader license
 - Python 3 for result validation and report generation
 
-The `zxing-cpp` directory is a Git submodule.
+The `zxing-cpp` directory is a Git submodule pinned at v3.1.1. The bundled Dynamsoft Capture Vision SDK is 3.6.50.9329 / DBR 11.6.50.9329, matching the 11.6.5000 release used by the Python and JavaScript companions.
 
 ## Get the Source
 
@@ -106,12 +106,17 @@ python tools/validate_results.py `
 
 The current full run uses one repetition on 7,894 unique BarBeR images. Recall is calculated as correct ground truth matches divided by 8,411 scored ground truth instances. The audit still records 8,615 original eligible annotations; 204 of those payloads are the unreliable placeholder `^` and are now excluded from scoring. Precision is calculated as correct predictions divided by evaluated predictions, where evaluated predictions are `correct + wrong_text + wrong_format + extra_result`.
 
-| Decoder | Correct | Recall | Precision | Image all-read rate | Mean decode time | Median decode time | P95 decode time |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| Dynamsoft Barcode Reader 11.4.20.7177 | 7,804 / 8,411 | 92.78% | 95.86% | 92.80% | 70.08 ms | 44.99 ms | 208.51 ms |
-| ZXing-C++ 3.1.0 | 6,019 / 8,411 | 71.56% | 95.78% | 71.42% | 74.09 ms | 44.34 ms | 250.22 ms |
+| Decoder | Correct | Recall | Precision | Wrong reads | No read | Mean decode time | Median decode time | P95 decode time |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Dynamsoft Barcode Reader 11.6.50.9329 | 7,807 / 8,411 | 92.82% | 95.85% | 92 (1.09%) | 512 (6.09%) | 58.04 ms | 40.26 ms | 159.74 ms |
+| ZXing-C++ 3.1.1 | 6,031 / 8,411 | 71.70% | 95.79% | 100 (1.19%) | 2,280 (27.11%) | 496.79 ms | 312.07 ms | 1489.25 ms |
 
-DBR read 1,785 more ground truth barcodes in this run and improved recall by 21.22 percentage points. Precision is now essentially tied (DBR 95.86%, ZXing-C++ 95.78%). DBR's mean decoder call was 70.08 ms versus 74.09 ms for ZXing-C++, about 5.4% lower in this run. The rematch recovered CODE_39 start/stop asterisks and CODE_128 `{GS}` markers for both decoders; ZXing-C++ gained 164 correct matches and DBR gained 360. The matching analysis found no remaining errors caused only by UPC-A or EAN-13 leading zero differences. DBR `CODE39EXTENDED` output is treated as `CODE_39` when the payload matches.
+Failures are split into **wrong reads** (`wrong_text + wrong_format`) and **no read** (`not_found + unsupported_format + decoder_error`), so correct + wrong reads + no read equals the 8,411 scored ground-truth instances. Extra results beyond the ground truth affect precision, not this split. `image_all_read_rate` is retained in `summary.json` only as a diagnostic.
+
+
+DBR read 1,776 more ground truth barcodes in this run, a lead of 21.12 percentage points in recall and 0.06 points in precision. DBR also produced 512 no-reads against 2,280 for ZXing-C++, and 92 wrong reads against 100. Decode times for the two engines are not directly comparable here: the ZXing-C++ configuration enables every supported format with `tryHarder`/`tryRotate`/`tryInvert`/`tryDownscale`, while DBR uses the `ReadBarcodes_Default` preset. DBR `CODE39EXTENDED` output is treated as `CODE_39` when the payload matches.
+
+The [Python](https://www.dynamsoft.com/codepool/benchmark-barcode-reading-python-zxing-dynamsoft-barcode-reader.html) and [JavaScript](https://www.dynamsoft.com/codepool/benchmark-barcode-reading-javascript-zxing-wasm-dynamsoft-barcode-reader.html) benchmarks run the identical manifest on DBR 11.6.5000, so the three projects form a same-version cross-runtime comparison.
 
 ## Generate the Report
 
