@@ -199,7 +199,8 @@ public:
             TextResult textResult;
 
             const CTextLineResultItem *textLine = textLineResult->GetItem(li);
-            CPoint *points = textLine->GetLocation().points;
+            CQuadrilateral quad = textLine->GetLocation(); // Keep the returned value alive before reading points
+            CPoint *points = quad.points;
             textResult.textLinePoints.push_back(Point(points[0][0], points[0][1]));
             textResult.textLinePoints.push_back(Point(points[1][0], points[1][1]));
             textResult.textLinePoints.push_back(Point(points[2][0], points[2][1]));
