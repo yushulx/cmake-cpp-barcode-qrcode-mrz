@@ -48,12 +48,13 @@ if %ERRORLEVEL% EQU 0 (
     echo Build successful!
     echo.
     echo You can now run the program with:
-    echo   %CARGO_CMD% run                                    (interactive mode)
-    echo   %CARGO_CMD% run -- "path/to/image.jpg"            (single file)
-    echo   %CARGO_CMD% run -- "file1.jpg" "file2.png"        (multiple files)
+    echo   %CARGO_CMD% run --bin barcode-scanner                       (CLI interactive mode)
+    echo   %CARGO_CMD% run --bin barcode-scanner -- "path/to/image.jpg"   (CLI single file)
+    echo   %CARGO_CMD% run --release --bin barcode-reader-ui           (Slint desktop UI)
     echo.
-    echo Or use the built executable:
-    echo   target\release\dynamsoft-barcode-cli.exe
+    echo Or use the built executables:
+    echo   target\release\barcode-scanner.exe
+    echo   target\release\barcode-reader-ui.exe
     echo.
 ) else (
     echo.

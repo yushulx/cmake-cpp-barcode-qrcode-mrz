@@ -31,14 +31,14 @@ exit /b 1
 :found_cargo
 
 REM Check if built executable exists
-if exist "target\release\dynamsoft-barcode-cli.exe" (
+if exist "target\release\barcode-scanner.exe" (
     echo Running built executable...
     echo.
-    target\release\dynamsoft-barcode-cli.exe %*
+    target\release\barcode-scanner.exe %*
 ) else (
     echo Built executable not found, running with cargo...
     echo.
-    %CARGO_CMD% run -- %*
+    %CARGO_CMD% run --bin barcode-scanner -- %*
 )
 
 echo.

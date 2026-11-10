@@ -13,6 +13,10 @@ image = "0.24"
 walkdir = "2.0"
 path-absolutize = "3.0"
 
+# Slint GUI for the barcode-reader-ui binary
+slint = { version = "1.18.1", features = ["image-default-formats"] }
+rfd = "0.18"
+
 # For Windows FFI bindings to Dynamsoft SDK
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.52", features = [
@@ -24,7 +28,12 @@ windows = { version = "0.52", features = [
 [build-dependencies]
 cc = "1.0"
 walkdir = "2.5.0"
+slint-build = "1.18.1"
 
 [[bin]]
 name = "barcode-scanner"
 path = "src/main.rs"
+
+[[bin]]
+name = "barcode-reader-ui"
+path = "src/gui.rs"

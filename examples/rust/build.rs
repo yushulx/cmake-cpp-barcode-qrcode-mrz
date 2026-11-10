@@ -24,7 +24,15 @@ fn main() {
             // Copy *.dll files to the output path for Windows
             let src_dir = Path::new("../../dcv/lib/win");
             copy_shared_libs_from_dir_to_out_dir(src_dir, &get_out_dir(), "dll");
-            
+
+            // Link the bundled litecam (Media Foundation) camera library
+            println!("cargo:rustc-link-search=../../litecam/dist/lib/windows/release");
+            println!("cargo:rustc-link-lib=dylib=litecam");
+            let litecam_dll = Path::new("../../litecam/dist/lib/windows/release/litecam.dll");
+            if litecam_dll.exists() {
+                let _ = fs::copy(litecam_dll, get_out_dir().join("litecam.dll"));
+            }
+
             // Copy resource directories (Templates and Models)
             copy_resource_directories(&get_out_dir());
         },
@@ -64,17 +72,24 @@ fn main() {
     }
 
     // Compile the C++ code
-    Build::new()
-        .cpp(true)
+    let mut cpp = Build::new();
+    cpp.cpp(true)
         .include("../../dcv/include")
-        .file("lib/bridge.cpp")
-        .compile("bridge");
+        .file("lib/bridge.cpp");
+    if target_os == "windows" {
+        cpp.include("../../litecam/dist/include")
+            .file("lib/camera_bridge.cpp");
+    }
+    cpp.compile("bridge");
 
     // Tell cargo to tell rustc to link the compiled C library
     println!("cargo:rustc-link-lib=static=bridge");
 
     // Add the directory where the library was built to the search path
     println!("cargo:rustc-link-search=native={}", env::var("OUT_DIR").unwrap());
+
+    // Compile the Slint UI for the barcode-reader-ui binary
+    slint_build::compile("ui/app.slint").expect("Slint build failed");
 }
 
 fn get_out_dir() -> PathBuf {
