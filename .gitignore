@@ -8,3 +8,6 @@ Debug
 dcv/lib/win/Models/
 dcv/lib/win/Templates/
 
+
+# WorkBuddy project data (local only)
+.workbuddy/

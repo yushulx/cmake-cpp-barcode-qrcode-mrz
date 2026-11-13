@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 
@@ -34,14 +35,23 @@ public:
             int result = router_->InitSettingsFromFile(template_path.c_str(), error, sizeof(error));
             if (result != EC_OK) throw std::runtime_error(std::string("Dynamsoft template initialization failed: ") + error);
 
+            // The Linux build of DCV exposes the official preset templates but
+            // does not always support the simplified-settings API on them. In
+            // that case run the preset template unchanged instead of aborting.
             SimplifiedCaptureVisionSettings settings{};
             result = router_->GetSimplifiedSettings(template_name_.c_str(), &settings);
-            if (result != EC_OK) throw std::runtime_error("Dynamsoft GetSimplifiedSettings failed: " + std::to_string(result));
-            settings.barcodeSettings.barcodeFormatIds = BF_ALL;
-            settings.barcodeSettings.expectedBarcodesCount = (std::max)(1, max_symbols);
-            settings.barcodeSettings.maxThreadsInOneTask = 1;
-            result = router_->UpdateSettings(template_name_.c_str(), &settings, error, sizeof(error));
-            if (result != EC_OK) throw std::runtime_error(std::string("Dynamsoft UpdateSettings failed: ") + error);
+            if (result != EC_OK) {
+                std::cerr << "Dynamsoft GetSimplifiedSettings unavailable (" << result
+                          << "); using the preset template unchanged\n";
+            } else {
+                settings.barcodeSettings.barcodeFormatIds = BF_ALL;
+                settings.barcodeSettings.expectedBarcodesCount = (std::max)(1, max_symbols);
+                settings.barcodeSettings.maxThreadsInOneTask = 1;
+                result = router_->UpdateSettings(template_name_.c_str(), &settings, error, sizeof(error));
+                if (result != EC_OK)
+                    std::cerr << "Dynamsoft UpdateSettings failed: " << error
+                              << "; using the preset template unchanged\n";
+            }
         }
     }
 

@@ -12,3 +12,7 @@ output/
 manifests/barber_source_files.json
 manifests/benchmark_manifest.jsonl
 manifests/smoke_manifest.jsonl
+# Scandit Linux SDK is proprietary and must not be committed.
+third_party/
+build-linux/
+scandit-license-key.txt

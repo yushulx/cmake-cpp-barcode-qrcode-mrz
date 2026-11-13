@@ -1,0 +1,27 @@
+{
+  "decoder": "scandit-linux",
+  "sdk": "Scandit Barcode Scanner SDK for Linux (C API)",
+  "preset": "SC_PRESET_HIGH_EFFORT",
+  "notes": "Still-image configuration: every BarBeR symbology supported by Scandit is enabled, codes may appear anywhere and in any orientation, duplicate filtering is off, and light-on-dark decoding is enabled for parity with ZXing tryInvert and DBR's default grayscale transforms.",
+  "multi_scan": true,
+  "max_locations_per_frame_cap": 64,
+  "color_inverted": true,
+  "symbologies": [
+    "ean13upca",
+    "ean8",
+    "upce",
+    "code128",
+    "code39",
+    "itf",
+    "qr",
+    "data-matrix",
+    "pdf417",
+    "aztec",
+    "two-digit-add-on",
+    "royal-mail-4state",
+    "kix",
+    "iata2of5",
+    "usps-intelligent-mail"
+  ],
+  "unsupported_barber_formats": ["JAPAN_POST", "POSTNET"]
+}

@@ -15,6 +15,13 @@ TEAL = (0, 170, 148)
 WHITE = (246, 249, 255)
 MUTED = (174, 194, 220)
 
+DISPLAY_NAMES = {
+    "dynamsoft-dbr": "Dynamsoft Barcode Reader",
+    "scandit-linux": "Scandit Barcode Scanner SDK",
+    "zxing-cpp": "ZXing-C++",
+}
+CARD_COLORS = [TEAL, BLUE, (222, 138, 15)]
+
 
 def font(size, bold=False):
     names = ["seguisb.ttf" if bold else "segoeui.ttf", "arialbd.ttf" if bold else "arial.ttf"]
@@ -64,27 +71,37 @@ def title_slide(title, subtitle, details=None):
     return image
 
 
-def benchmark_cover_slide(summary, images, ground_truth):
-    image, draw = base_slide()
-    draw.text((105, 205), "ZXing-C++ vs. Dynamsoft Barcode Reader", font=fit_text(draw, "ZXing-C++ vs. Dynamsoft Barcode Reader", 1710, 70, True), fill=WHITE)
-    draw.text((108, 302), "BarBeR full dataset benchmark", font=font(34), fill=MUTED)
+def decoder_cards(draw, summary, top, bottom, metric_label="Mean"):
     decoders = list(summary["decoders"].items())
-    colors = [TEAL, BLUE]
+    count = len(decoders)
+    total, gap = 1710, 30
+    width = (total - gap * (count - 1)) // count
     for index, (name, metrics) in enumerate(decoders):
-        x = 105 + index * 855
-        draw.rounded_rectangle((x, 390, x + 750, 800), 22, fill=(17, 49, 86), outline=colors[index], width=4)
-        title = "Dynamsoft Barcode Reader" if name == "dynamsoft-dbr" else "ZXing-C++"
-        draw.text((x + 42, 430), title, font=fit_text(draw, title, 660, 37, True), fill=WHITE)
+        x = 105 + index * (width + gap)
+        draw.rounded_rectangle(
+            (x, top, x + width, bottom), 22, fill=(17, 49, 86),
+            outline=CARD_COLORS[index % len(CARD_COLORS)], width=4,
+        )
+        display = DISPLAY_NAMES.get(name, name)
+        draw.text((x + 26, top + 30), display, font=fit_text(draw, display, width - 52, 36, True), fill=WHITE)
         values = [
             ("Recall", f'{metrics["coverage_adjusted_recall"] * 100:.2f}%'),
-            ("Precision", f'{metrics["precision"] * 100:.2f}%'),
-            ("Mean", f'{metrics["mean_decode_ms"]:.2f} ms'),
+            ("Wrong reads", f'{metrics["wrong_reads"]:,}'),
+            (metric_label, f'{metrics["mean_decode_ms"]:.2f} ms'),
         ]
-        y = 525
+        y = top + 108
         for label, value in values:
-            draw.text((x + 42, y), label, font=font(30), fill=MUTED)
-            draw.text((x + 310, y - 12), value, font=font(44, True), fill=WHITE)
-            y += 86
+            draw.text((x + 26, y + 12), label, font=font(26), fill=MUTED)
+            draw.text((x + width - 26, y), value, font=font(40, True), fill=WHITE, anchor="ra")
+            y += 84
+
+
+def benchmark_cover_slide(summary, images, ground_truth):
+    image, draw = base_slide()
+    title = "Dynamsoft vs. Scandit vs. ZXing"
+    draw.text((105, 205), title, font=fit_text(draw, title, 1710, 70, True), fill=WHITE)
+    draw.text((108, 302), "BarBeR full dataset benchmark", font=font(34), fill=MUTED)
+    decoder_cards(draw, summary, 380, 800)
     draw.text((105, 842), f"{images:,} images | {ground_truth:,} ground truth barcodes | one measured run", font=font(30), fill=MUTED)
     return image
 
@@ -92,22 +109,7 @@ def benchmark_cover_slide(summary, images, ground_truth):
 def comparison_slide(summary, images, repetitions):
     image, draw = base_slide()
     draw.text((105, 205), "Measured Results", font=font(72, True), fill=WHITE)
-    decoders = list(summary["decoders"].items())
-    colors = [BLUE, TEAL]
-    for index, (name, metrics) in enumerate(decoders):
-        x = 105 + index * 855
-        draw.rounded_rectangle((x, 345, x + 750, 825), 22, fill=(17, 49, 86), outline=colors[index], width=4)
-        draw.text((x + 42, 385), name, font=font(38, True), fill=WHITE)
-        values = [
-            ("Recall", f'{metrics["coverage_adjusted_recall"] * 100:.2f}%'),
-            ("Precision", f'{metrics["precision"] * 100:.2f}%'),
-            ("Mean decode", f'{metrics["mean_decode_ms"]:.2f} ms'),
-        ]
-        y = 490
-        for label, value in values:
-            draw.text((x + 42, y), label, font=font(27), fill=MUTED)
-            draw.text((x + 310, y - 8), value, font=font(38, True), fill=WHITE)
-            y += 94
+    decoder_cards(draw, summary, 330, 815, metric_label="Mean decode")
     draw.text((105, 865), f"{images:,} images across {repetitions} measured runs", font=font(29), fill=MUTED)
     return image
 
@@ -125,7 +127,7 @@ def main():
     images = stats["manifest_images"]
     ground_truth = stats["benchmark_annotations"]
     decoder_records = [value["records"] for value in summary["decoders"].values()]
-    if len(decoder_records) != 2 or any(value % images for value in decoder_records):
+    if any(value % images for value in decoder_records):
         raise SystemExit("summary does not contain complete full-dataset decoder records")
     repetitions = decoder_records[0] // images
     if repetitions < 1 or any(value != images * repetitions for value in decoder_records):
@@ -138,7 +140,7 @@ def main():
         benchmark_cover_slide(summary, images, ground_truth),
         title_slide(
             "One Dataset and One Input Pipeline",
-            "The same RGB888 pixels are passed to both barcode readers",
+            "The same RGB888 pixels are passed to all three barcode readers",
             [("MEASURED RUNS", str(repetitions)), ("DECODER RECORDS", f"{sum(decoder_records):,}")],
         ),
         comparison_slide(summary, images, repetitions),

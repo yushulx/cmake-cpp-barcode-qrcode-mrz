@@ -100,6 +100,9 @@ int main(int argc, char** argv)
                     for (const auto& match : rematched) matches.push_back(matchJson(match));
                 }
                 value["matches"] = matches;
+                // The matches in this file were produced by the current rules, so
+                // the record must say so even though the decode itself predates them.
+                value["protocol"] = "protocol-v2";
                 out << value.dump() << '\n';
                 ++count;
             }

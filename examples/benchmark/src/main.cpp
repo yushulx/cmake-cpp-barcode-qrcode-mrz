@@ -6,15 +6,17 @@
 #include "result_writer.h"
 
 #include <algorithm>
-#include <array>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <random>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace fs = std::filesystem;
 namespace {
@@ -40,13 +42,32 @@ std::string require(const Options& options,const std::string& key)
     return it->second;
 }
 
-std::string licenseKey(const Options& options)
+std::string readLicense(const Options& options,const char* env_name,
+                        const std::string& file_option,const std::string& label)
 {
-    if(const char* value=std::getenv("DYNAMSOFT_LICENSE_KEY"))return value;
-    const auto path=require(options,"--license-key-file");
-    std::ifstream input(path);std::string value;std::getline(input,value);
-    if(value.empty())throw std::runtime_error("Dynamsoft license key file is empty: "+path);
+    if(const char* value=std::getenv(env_name))return value;
+    auto it=options.find(file_option);
+    if(it==options.end())
+        throw std::runtime_error(label+" requires "+file_option+" or the "+env_name+" environment variable");
+    std::ifstream input(it->second);std::string value;std::getline(input,value);
+    while(!value.empty()&&(value.back()=='\r'||value.back()=='\n'||value.back()==' '||value.back()=='\t'))
+        value.pop_back();
+    if(value.empty())throw std::runtime_error(label+" license key file is empty: "+it->second);
     return value;
+}
+
+std::vector<std::string> splitList(const std::string& value)
+{
+    std::vector<std::string> result;
+    std::size_t begin=0;
+    while(begin<=value.size()){
+        const auto end=value.find(',',begin);
+        auto item=value.substr(begin,end==std::string::npos?std::string::npos:end-begin);
+        if(!item.empty())result.push_back(item);
+        if(end==std::string::npos)break;
+        begin=end+1;
+    }
+    return result;
 }
 
 int audit(const Options& options)
@@ -78,6 +99,12 @@ std::vector<bench::MatchItem> errorMatches(const bench::ManifestRecord& sample,b
     return result;
 }
 
+#ifdef BENCH_HAS_SCANDIT
+constexpr const char* kDefaultDecoders="zxing-cpp,dynamsoft-dbr,scandit-linux";
+#else
+constexpr const char* kDefaultDecoders="zxing-cpp,dynamsoft-dbr";
+#endif
+
 int execute(const Options& options,bool smoke)
 {
     const fs::path image_root=require(options,"--images");
@@ -85,6 +112,9 @@ int execute(const Options& options,bool smoke)
     const fs::path output=require(options,"--output");
     const fs::path dbr_config=options.count("--dbr-config")?options.at("--dbr-config"):"";
     const std::string dbr_template_label=options.count("--dbr-template")?options.at("--dbr-template"):"ReadBarcodes_Default";
+    const std::string zxing_config_path=options.count("--zxing-config")?options.at("--zxing-config"):"configs/zxing_all_supported.json";
+    const std::string scandit_config_path=options.count("--scandit-config")?options.at("--scandit-config"):"configs/scandit_all_supported.json";
+
     auto samples=bench::BarberDataset::readManifest(manifest);
     if(smoke&&samples.size()!=10)throw std::runtime_error("smoke manifest must contain exactly 10 images");
     if(samples.empty())throw std::runtime_error("manifest contains no benchmark images");
@@ -96,42 +126,92 @@ int execute(const Options& options,bool smoke)
     const int repetitions=options.count("--repetitions")?std::stoi(options.at("--repetitions")):1;
     int max_symbols=1;
     for(const auto& sample:samples)max_symbols=std::max(max_symbols,static_cast<int>(sample.ground_truth.size()));
-    auto zxing=bench::createZxingDecoder(max_symbols);
-    auto dbr=bench::createDynamsoftDecoder(dbr_config.string(),dbr_template_label,licenseKey(options),max_symbols);
-    std::cout<<"ZXing-C++="<<zxing->version()<<" DBR="<<dbr->version()
-             <<" images="<<samples.size()<<" repetitions="<<repetitions<<'\n';
+
+    const auto requested=splitList(options.count("--decoders")?options.at("--decoders"):kDefaultDecoders);
+    std::vector<std::unique_ptr<bench::IDecoderAdapter>> decoders;
+    std::map<std::string,std::string> config_hashes;
+    for(const auto& name:requested){
+        if(name=="zxing-cpp"){
+            decoders.push_back(bench::createZxingDecoder(max_symbols));
+            config_hashes[name]=bench::sha256File(zxing_config_path);
+        }else if(name=="dynamsoft-dbr"){
+            decoders.push_back(bench::createDynamsoftDecoder(
+                dbr_config.string(),dbr_template_label,
+                readLicense(options,"DYNAMSOFT_LICENSE_KEY","--license-key-file","Dynamsoft"),max_symbols));
+            config_hashes[name]=dbr_config.empty()?std::string("dbr-template:")+dbr_template_label
+                                                  :bench::sha256File(dbr_config);
+        }else if(name=="scandit-linux"){
+#ifdef BENCH_HAS_SCANDIT
+            const std::string writable=options.count("--scandit-data-dir")
+                ?options.at("--scandit-data-dir"):"/var/tmp/scandit";
+            std::error_code mkdir_error;fs::create_directories(writable,mkdir_error);
+            if(mkdir_error)throw std::runtime_error("cannot create Scandit data directory "+writable+": "+mkdir_error.message());
+            decoders.push_back(bench::createScanditDecoder(
+                scandit_config_path,
+                readLicense(options,"SCANDIT_LICENSE_KEY","--scandit-license-key-file","Scandit"),
+                writable,max_symbols));
+            config_hashes[name]=bench::sha256File(scandit_config_path);
+#else
+            throw std::runtime_error("this build has no Scandit decoder (Linux SDK not found at configure time)");
+#endif
+        }else{
+            throw std::runtime_error("unknown decoder: "+name);
+        }
+    }
+    if(decoders.empty())throw std::runtime_error("--decoders selected no decoder");
+
+    for(const auto& decoder:decoders){
+        std::cout<<decoder->name()<<"="<<decoder->version();
+        const auto note=decoder->configuration();
+        if(!note.empty())std::cout<<" ("<<note<<")";
+        std::cout<<'\n';
+    }
+    std::cout<<"images="<<samples.size()<<" repetitions="<<repetitions<<'\n';
+
     fs::create_directories(output);
     const auto jsonl=output/"results.jsonl";
     auto completed=bench::completedKeys(jsonl);
     const auto manifest_hash=bench::sha256File(manifest);
-    const auto zxing_config_hash=bench::sha256File(options.count("--zxing-config")?options.at("--zxing-config"):"configs/zxing_all_supported.json");
-    const auto dbr_config_hash=dbr_config.empty()?std::string("dbr-template:")+dbr_template_label:bench::sha256File(dbr_config);
+
+    // Optional contiguous slice of the manifest. Multiple processes can share
+    // one results directory (appendResult is cross-process safe) while working
+    // on disjoint slices, which keeps manifest hashes identical across records.
+    const std::size_t start_index=options.count("--start-index")
+        ?static_cast<std::size_t>(std::stoull(options.at("--start-index"))):0;
+    const std::size_t end_index=options.count("--end-index")
+        ?static_cast<std::size_t>(std::stoull(options.at("--end-index"))):samples.size();
+    if(start_index>end_index||end_index>samples.size())
+        throw std::runtime_error("invalid --start-index/--end-index");
+    if(start_index||end_index!=samples.size())
+        std::cout<<"manifest slice=["<<start_index<<","<<end_index<<")\n";
 
     for(int repetition=0;repetition<repetitions;++repetition){
-        std::size_t sample_index=0;
-        for(const auto& sample:samples){
-            const auto zxing_key=bench::recordKey(sample.sample_id,zxing->name(),repetition);
-            const auto dbr_key=bench::recordKey(sample.sample_id,dbr->name(),repetition);
-            if(completed.count(zxing_key)&&completed.count(dbr_key)){
-                ++sample_index;
-                continue;
-            }
+        for(std::size_t sample_index=start_index;sample_index<end_index;++sample_index){
+            const auto& sample=samples[sample_index];
+            bool all_done=true;
+            for(const auto& decoder:decoders)
+                if(!completed.count(bench::recordKey(sample.sample_id,decoder->name(),repetition)))all_done=false;
+            if(all_done)continue;
+
             bench::ImageBuffer image;std::string error;
             const auto load_begin=std::chrono::steady_clock::now();
             const bool loaded=bench::loadImage(image_root/sample.relative_path,image,error);
             const auto load_ns=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()-load_begin).count();
-            std::array<bench::IDecoderAdapter*,2> decoders={zxing.get(),dbr.get()};
-            std::mt19937 order(static_cast<unsigned>(std::hash<std::string>{}(sample.sample_id)^static_cast<std::size_t>(repetition)));
-            if(order()&1)std::swap(decoders[0],decoders[1]);
-            for(auto* decoder:decoders){
+            std::vector<bench::IDecoderAdapter*> order;
+            order.reserve(decoders.size());
+            for(const auto& decoder:decoders)order.push_back(decoder.get());
+            std::mt19937 rng(static_cast<unsigned>(std::hash<std::string>{}(sample.sample_id)^static_cast<std::size_t>(repetition)));
+            std::shuffle(order.begin(),order.end(),rng);
+
+            for(auto* decoder:order){
                 const auto key=bench::recordKey(sample.sample_id,decoder->name(),repetition);
                 if(completed.count(key))continue;
                 bench::DecodeRun run;
                 if(loaded)run=decoder->decode(image);else run.error="input_pipeline_error: "+error;
                 bench::RawResultRecord record;
-                record.protocol="protocol-v1";record.manifest_sha256=manifest_hash;
+                record.protocol="protocol-v2";record.manifest_sha256=manifest_hash;
                 record.sample=sample;record.decoder=decoder->name();record.decoder_version=decoder->version();
-                record.config_sha256=decoder==zxing.get()?zxing_config_hash:dbr_config_hash;
+                record.config_sha256=config_hashes.at(decoder->name());
                 record.repetition=repetition;record.image_load_ns=load_ns;record.run=std::move(run);
                 if(record.run.error){
                     const auto outcome=loaded?bench::Outcome::DecoderError:bench::Outcome::InputPipelineError;
@@ -141,9 +221,8 @@ int execute(const Options& options,bool smoke)
                 }
                 bench::appendResult(jsonl,record);completed.insert(key);
             }
-            ++sample_index;
-            if(sample_index%100==0||sample_index==samples.size())
-                std::cout<<"repetition="<<(repetition+1)<<" progress="<<sample_index<<"/"<<samples.size()<<'\n'<<std::flush;
+            if((sample_index+1)%100==0||sample_index+1==end_index)
+                std::cout<<"repetition="<<(repetition+1)<<" progress="<<(sample_index+1)<<"/"<<samples.size()<<'\n'<<std::flush;
         }
     }
     const auto summary=output/"summary.json";
@@ -159,8 +238,11 @@ void usage()
     std::cout
       <<"Usage:\n"
       <<"  barcode_benchmark audit --images DIR --annotations DIR [--output DIR]\n"
-      <<"  barcode_benchmark smoke --images DIR --manifest FILE --output DIR --license-key-file FILE [--dbr-config FILE] [--dbr-template NAME] [--zxing-config FILE] [--repetitions N]\n"
-      <<"  barcode_benchmark run   --images DIR --manifest FILE --output DIR --license-key-file FILE [--dbr-config FILE] [--dbr-template NAME] [--zxing-config FILE] [--repetitions N]\n";
+      <<"  barcode_benchmark smoke --images DIR --manifest FILE --output DIR --license-key-file FILE [--decoders LIST] [--scandit-license-key-file FILE] [--dbr-config FILE] [--dbr-template NAME] [--zxing-config FILE] [--scandit-config FILE] [--scandit-data-dir DIR] [--repetitions N]\n"
+      <<"  barcode_benchmark run   --images DIR --manifest FILE --output DIR --license-key-file FILE [--decoders LIST] [--scandit-license-key-file FILE] [--dbr-config FILE] [--dbr-template NAME] [--zxing-config FILE] [--scandit-config FILE] [--scandit-data-dir DIR] [--repetitions N]\n"
+      <<"Decoders: zxing-cpp, dynamsoft-dbr, scandit-linux (comma separated).\n"
+      <<"Optional: --start-index N --end-index N to process one manifest slice per process.\n"
+      <<"Licenses may also come from DYNAMSOFT_LICENSE_KEY and SCANDIT_LICENSE_KEY.\n";
 }
 }
 

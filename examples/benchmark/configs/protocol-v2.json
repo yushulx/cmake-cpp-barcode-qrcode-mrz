@@ -1,0 +1,47 @@
+{
+  "protocol": "protocol-v2",
+  "supersedes": "protocol-v1",
+  "dataset": "BarBeR",
+  "ground_truth": "original VGG JSON annotations",
+  "image_input": "original full image, shared RGB888 pixel buffer",
+  "matching_key": ["format_family", "exact_normalized_payload"],
+  "payload_normalization": [
+    "upc_a_leading_zero",
+    "code39_start_stop_asterisks",
+    "code128_leading_gs1_marker",
+    "gs1_ai_parentheses_unwrap",
+    "royal_mail_one_character_prefix",
+    "html_entity_unescape",
+    "trailing_newline_strip",
+    "leading_nul_escape_strip"
+  ],
+  "format_families": {
+    "CODE_128": ["CODE_128", "GS1_128"]
+  },
+  "format_mapping": {
+    "ROYAL_MAIL": "ROYAL_MAIL",
+    "IATA_2_OF_5": "IATA_2_OF_5",
+    "USPS_INTELLIGENT_MAIL": "USPS_INTELLIGENT_MAIL"
+  },
+  "changes_from_v1": [
+    "the canonical format table maps the underscored BarBeR labels (ROYAL_MAIL, IATA_2_OF_5, USPS_INTELLIGENT_MAIL) to the spellings the decoders use; v1 stripped the underscores before lookup and scored those annotations as unsupported for every reader",
+    "GS1 application identifiers printed in parentheses are unwrapped for CODE_128 / GS1_128, so '(90)85320' matches the annotation '9085320'",
+    "a ROYAL_MAIL payload one character shorter than the annotation counts as the same reading, because the Linux DBR build returns 10 of the 11 characters",
+    "CODE_128 and GS1_128 are one format family: GS1-128 is Code 128 carrying GS1 data (AIM ]C1 vs ]C0), not a separate symbology"
+  ],
+  "outcomes": ["correct", "wrong_text", "wrong_format", "not_found", "unsupported_format", "decoder_error"],
+  "outcome_rollup": {
+    "wrong_reads": ["wrong_text", "wrong_format"],
+    "no_read": ["not_found", "unsupported_format", "decoder_error"]
+  },
+  "unmatched_prediction_policy": "a prediction that no annotation claims is not scored against any instance; BarBeR's annotations are curated rather than exhaustive, so it cannot be adjudicated",
+  "unreliable_placeholder_policy": "ground truth payload '^' is excluded from scoring",
+  "location_scored": false,
+  "decoder_order": "deterministic randomized per sample and repetition",
+  "decoder_timing_excludes": ["image loading", "matching", "serialization", "report generation"],
+  "unsupported_policy": "unsupported_format",
+  "missing_payload_policy": "excluded from decoding accuracy",
+  "formats": "all formats supported by each tested decoder",
+  "per_image_hints": false,
+  "expected_barcode_count": "fixed dataset-level maximum"
+}

@@ -130,7 +130,9 @@ void appendResult(const std::filesystem::path& jsonl, const RawResultRecord& rec
         if(!out.is_open())std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     if (!out.is_open()) throw std::runtime_error("cannot append result: " + jsonl.string());
-    out << value.dump() << '\n';
+    // Raw barcode payloads from any SDK may contain bytes that are not valid
+    // UTF-8. Replace rather than throw so one binary code cannot abort a full run.
+    out << value.dump(-1, ' ', false, json::error_handler_t::replace) << '\n';
     out.close();
     cache.keys.insert(key);
     cache.consumed_bytes=std::filesystem::file_size(jsonl);
@@ -170,7 +172,10 @@ void generateSummary(const std::filesystem::path& jsonl, const std::filesystem::
                 const auto format=value["ground_truth"][truth_index].value("format","");
                 ++c.by_format[format][outcome];
                 ++c.by_source[value.value("annotation_file","")][outcome];
-                if(isFormatSupported("zxing-cpp",format)&&isFormatSupported("dynamsoft-dbr",format)){
+                // "Common format" is the intersection of all three readers'
+                // symbology coverage, not just the two original ones.
+                if(isFormatSupported("zxing-cpp",format)&&isFormatSupported("dynamsoft-dbr",format)
+                   &&isFormatSupported("scandit-linux",format)){
                     ++c.common_eligible;
                     if(outcome=="correct")++c.common_correct;
                 }
@@ -215,9 +220,9 @@ void generateSummary(const std::filesystem::path& jsonl, const std::filesystem::
         };
     }
     json summary = {
-        {"title","ZXing-C++ vs. Dynamsoft Barcode Reader"},
+        {"title","ZXing-C++ vs. Dynamsoft Barcode Reader vs. Scandit Barcode Scanner SDK (Linux)"},
         {"dataset","BarBeR public dataset"},
-        {"disclosure","This benchmark was implemented and published by Dynamsoft, the developer of Dynamsoft Barcode Reader. It uses the public third-party BarBeR dataset. To make the comparison auditable, the protocol, source code, decoder configurations, environment details, dataset manifest, HTML report, and per-image raw results are provided. BarBeR's standardized annotations were generated with assistance from proprietary Datalogic software. Difficult undecodable barcode regions were manually localized and are excluded from decoding accuracy when no reliable payload is available."},
+        {"disclosure","This benchmark was implemented and published by Dynamsoft, the developer of Dynamsoft Barcode Reader. It uses the public third-party BarBeR dataset. To make the comparison auditable, the protocol, source code, decoder configurations, environment details, dataset manifest, HTML report, and per-image raw results are provided. BarBeR's standardized annotations were generated with assistance from proprietary Datalogic software. Difficult undecodable barcode regions were manually localized and are excluded from decoding accuracy when no reliable payload is available. All readers receive the same RGB888 pixel buffer loaded once per image; only the decoder call is timed. Scandit is exercised through its Linux C API (8.7.1) with SC_PRESET_HIGH_EFFORT, a fresh frame sequence per still image, duplicate filtering off, full-image search with no direction assumption, light-on-dark decoding enabled, multi-scan enabled, and every BarBeR symbology the SDK exposes enabled. Multi-scan is requested when the trial license includes the tracking feature; otherwise the SDK falls back to single-code scanning, which is disclosed in the run output. Scandit 8.7.1 exposes no JAPAN_POST or POSTNET symbology, so those ground truth instances are scored as unsupported_format. Protocol v2 corrects three matching defects that v1 carried: the canonical format table now maps the underscored BarBeR labels (ROYAL_MAIL, IATA_2_OF_5, USPS_INTELLIGENT_MAIL) to their supported spellings, GS1 element strings printed with application identifiers in parentheses are compared with the parentheses removed, a ROYAL_MAIL payload that is the annotation's prefix at the shorter length is accepted because the Linux DBR build returns 10 of the 11 characters, and CODE_128 / GS1_128 are matched as one format family because GS1-128 is Code 128 carrying GS1 data rather than a separate symbology. Scandit trial licenses require network access; license or activation failures are reported as decoder errors, never as no-reads. Accuracy and timing were collected in one Linux container with four worker processes handling disjoint manifest slices, so absolute decode times include CPU contention and must not be compared with single-process measurements on other platforms; only the relative ordering within this run is meaningful. Six Dynamsoft frames returned 'Operation timeout' under this contention and are recorded as decoder_error. The Linux DCV build runs its official preset template with deep-learning models and is not the same binary as the earlier Windows measurement."},
         {"decoders",decoders}
     };
     std::filesystem::create_directories(output.parent_path());

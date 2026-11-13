@@ -1,0 +1,7 @@
+*
+!Dockerfile
+!third_party/
+third_party/*
+!third_party/scandit-barcodescanner-linux_8.7.1/
+third_party/scandit-barcodescanner-linux_8.7.1/*
+!third_party/scandit-barcodescanner-linux_8.7.1/libscandit-barcodescanner-8.7.1-amd64.deb

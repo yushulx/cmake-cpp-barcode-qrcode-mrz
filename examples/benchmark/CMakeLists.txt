@@ -23,13 +23,19 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zxing-cpp/CMakeLists.txt")
 endif()
 add_subdirectory(zxing-cpp EXCLUDE_FROM_ALL)
 
-FetchContent_Declare(
-    nlohmann_json
-    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
-    URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-FetchContent_MakeAvailable(nlohmann_json)
+# Prefer a distribution-provided nlohmann_json (used in the Linux benchmark
+# container so the build does not need GitHub access). Fall back to the pinned
+# FetchContent download for developer machines.
+find_package(nlohmann_json QUIET)
+if(NOT nlohmann_json_FOUND)
+    FetchContent_Declare(
+        nlohmann_json
+        URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+        URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    FetchContent_MakeAvailable(nlohmann_json)
+endif()
 
 set(DCV_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../dcv" CACHE PATH "Dynamsoft Capture Vision SDK root")
 
@@ -58,6 +64,31 @@ target_include_directories(benchmark_decoders PUBLIC
 )
 target_link_libraries(benchmark_decoders PUBLIC benchmark_core ZXing::Core)
 target_compile_definitions(benchmark_decoders PUBLIC NOMINMAX)
+
+# Scandit's Barcode Scanner SDK is Linux-only and is shipped as a Debian
+# package from the Scandit dashboard. When its headers and library are visible
+# (installed with dpkg in the benchmark container, or unpacked under
+# third_party/sdk-root), add the third decoder adapter.
+option(ENABLE_SCANDIT "Build the Scandit Linux C++ decoder adapter" ON)
+set(SCANDIT_SDK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/sdk-root" CACHE PATH
+    "Unpacked Scandit Linux SDK root (usr/include + usr/lib)")
+if(ENABLE_SCANDIT AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # PATHS (not HINTS) so a dpkg-installed SDK wins over the optional unpacked
+    # copy under third_party/sdk-root.
+    find_path(SCANDIT_INCLUDE_DIR Scandit/ScBarcodeScanner.h
+              PATHS "${SCANDIT_SDK_ROOT}/usr/include")
+    find_library(SCANDIT_LIBRARY NAMES scanditsdk
+                 PATHS "${SCANDIT_SDK_ROOT}/usr/lib")
+    if(SCANDIT_INCLUDE_DIR AND SCANDIT_LIBRARY)
+        message(STATUS "Scandit SDK: ${SCANDIT_LIBRARY} (headers ${SCANDIT_INCLUDE_DIR})")
+        target_sources(benchmark_decoders PRIVATE src/scandit_decoder.cpp)
+        target_include_directories(benchmark_decoders PRIVATE "${SCANDIT_INCLUDE_DIR}")
+        target_link_libraries(benchmark_decoders PRIVATE "${SCANDIT_LIBRARY}")
+        target_compile_definitions(benchmark_decoders PUBLIC BENCH_HAS_SCANDIT=1)
+    else()
+        message(STATUS "Scandit SDK not found; building with ZXing-C++ and DBR only")
+    endif()
+endif()
 
 if(WIN32)
     target_link_directories(benchmark_decoders PUBLIC "${DCV_ROOT}/lib/win")
