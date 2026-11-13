@@ -137,7 +137,8 @@ int execute(const Options& options,bool smoke)
         }else if(name=="dynamsoft-dbr"){
             decoders.push_back(bench::createDynamsoftDecoder(
                 dbr_config.string(),dbr_template_label,
-                readLicense(options,"DYNAMSOFT_LICENSE_KEY","--license-key-file","Dynamsoft"),max_symbols));
+                readLicense(options,"DYNAMSOFT_LICENSE_KEY","--license-key-file","Dynamsoft"),
+                options.count("--dbr-expected-count")?std::stoi(options.at("--dbr-expected-count")):-1));
             config_hashes[name]=dbr_config.empty()?std::string("dbr-template:")+dbr_template_label
                                                   :bench::sha256File(dbr_config);
         }else if(name=="scandit-linux"){

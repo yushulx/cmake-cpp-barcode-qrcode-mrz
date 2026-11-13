@@ -21,7 +21,7 @@ std::unique_ptr<IDecoderAdapter> createZxingDecoder(int max_symbols);
 std::unique_ptr<IDecoderAdapter> createDynamsoftDecoder(const std::string& template_path,
                                                         const std::string& template_name,
                                                         const std::string& license_key,
-                                                        int max_symbols);
+                                                        int expected_barcodes_count);
 #ifdef BENCH_HAS_SCANDIT
 std::unique_ptr<IDecoderAdapter> createScanditDecoder(const std::string& settings_path,
                                                       const std::string& license_key,

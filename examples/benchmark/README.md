@@ -8,10 +8,10 @@ https://github.com/user-attachments/assets/c2996e2c-e05e-4d2a-b1b4-f41b0d71c6c6
 
 - CMake 3.16 or later
 - A C++20 compiler
-- Dynamsoft Capture Vision SDK in `../../dcv`
-- A valid Dynamsoft Barcode Reader license
+- Dynamsoft Capture Vision SDK placed at `../dcv` (proprietary, not bundled)
+- **Your own** Dynamsoft Barcode Reader license — see [`../licenses/README.md`](../licenses/README.md)
 - Python 3 for result validation and report generation
-- **Scandit Linux SDK 8.7.1** (Linux/amd64 only) and a **Linux** trial key
+- **Scandit Linux SDK 8.7.1** (Linux/amd64 only) and **your own Linux** trial key
 - Docker (Linux containers) to run the three-way benchmark
 
 The `zxing-cpp` directory is a Git submodule pinned at v3.1.1. The bundled Dynamsoft Capture Vision SDK is 3.6.50 / DBR 11.6.50, matching the 11.6.5000 release used by the Python and JavaScript companions.
@@ -20,21 +20,23 @@ The `zxing-cpp` directory is a Git submodule pinned at v3.1.1. The bundled Dynam
 
 Scandit's Barcode Scanner SDK for Linux is a **C API** shipped as a Debian package from the [Scandit dashboard](https://ssl.scandit.com/dashboard/downloads) (`SDK Installation`). It is **not redistributable**, so it is not committed. Download `scandit-barcodescanner-linux_8.7.1.zip`, then place `libscandit-barcodescanner-8.7.1-amd64.deb` in `third_party/scandit-barcodescanner-linux_8.7.1/`. `Dockerfile` installs it into the container.
 
-Put the Linux trial key in `scandit-license-key.txt` in this directory (excluded from Git), or set `SCANDIT_LICENSE_KEY`. The key is Linux-only, must be created for the Linux platform, and requires network access for activation. Multi-scan needs the "tracking" license feature; when it is missing the adapter falls back to single-code scanning and prints the reason.
+Put your Linux trial key in `../licenses/scandit-linux.txt` and the Dynamsoft key in `../licenses/dynamsoft-dbr.txt` (copy the `*.txt.example` templates first; see [`../licenses/README.md`](../licenses/README.md)). **No license key is bundled with this repository** and the filled files are excluded from Git. `DYNAMSOFT_LICENSE_KEY` / `SCANDIT_LICENSE_KEY` can be used instead. The Scandit key is Linux-only, must be created for the Linux platform, and requires network access for activation. Multi-scan needs the "tracking" license feature; when it is missing the adapter falls back to single-code scanning and prints the reason.
 
-## Get the Source
+## Source layout in this dataset repository
 
-Clone the parent repository with submodules.
+This is an archived copy of `examples/benchmark` from
+[cmake-cpp-barcode-qrcode-mrz](https://github.com/yushulx/cmake-cpp-barcode-qrcode), placed at
+`barber-benchmark/cpp/`. Three external dependencies are **not** bundled and must be provisioned
+before building:
 
-```powershell
-git clone --recurse-submodules https://github.com/yushulx/cmake-cpp-barcode-qrcode.git
-```
+- `zxing-cpp/` — the [ZXing-C++](https://github.com/zxing-cpp/zxing-cpp) submodule pinned at
+  v3.1.1. Clone that tag into this directory, or copy it from the original checkout.
+- `../dcv/` — the Dynamsoft Capture Vision SDK root (proprietary, not redistributable).
+- `third_party/scandit-barcodescanner-linux_8.7.1/*.deb` — Scandit's Linux SDK package from the
+  [Scandit dashboard](https://ssl.scandit.com/dashboard/downloads).
 
-Initialize the submodule in an existing checkout.
-
-```powershell
-git submodule update --init --recursive
-```
+The audited manifests, published results and the HTML report **are** included here, so the
+benchmark can be inspected and re-scored without rebuilding.
 
 ## Build (native, two decoders)
 
@@ -56,7 +58,11 @@ tools/run_benchmark_docker.sh full    # all 7,894 images
 tools/run_benchmark_docker.sh shell   # interactive container
 ```
 
-Set `BARBER_IMAGES` if the dataset lives elsewhere. The default is `D:/images/BarBeR_Dataset/BarBeR - Dataset/dataset/images`. The script builds `barber-benchmark:scandit-8.7.1`, compiles into `/tmp/build` inside the container, and writes results to `results/full_linux/`.
+The script expects the `barber-benchmark/` layout (`licenses/`, `dcv/`, `cpp/`) and refuses to
+start if a license key, the DCV SDK or the Scandit `.deb` is missing. Set `BARBER_IMAGES` if the
+dataset lives elsewhere. The default is `D:/images/BarBeR_Dataset/BarBeR - Dataset/dataset/images`.
+It builds `barber-benchmark:scandit-8.7.1`, compiles into `/tmp/build` inside the container, and
+writes results to `results/full_linux/`.
 
 Two Linux-specific details are handled by the script:
 
@@ -79,8 +85,8 @@ Run the audit before every published benchmark.
 
 ```powershell
 build/Release/barcode_benchmark.exe audit `
-  --images "D:/images/public-barcode-dataset/BarBeR - Dataset/dataset/images" `
-  --annotations "D:/images/public-barcode-dataset/BarBeR - Dataset/Annotations/VIA" `
+  --images "D:/images/BarBeR_Dataset/BarBeR - Dataset/dataset/images" `
+  --annotations "D:/images/BarBeR_Dataset/BarBeR - Dataset/Annotations/VIA" `
   --output manifests
 ```
 
@@ -90,20 +96,21 @@ For the current local dataset, the audit starts from 8,748 image records and 9,8
 
 ## Run the Full Benchmark
 
-Store the Dynamsoft license in a local text file that is not committed. This checkout uses `../../license-key.txt` from the repository root.
+Supply your own Dynamsoft license: set `DYNAMSOFT_LICENSE_KEY`, or point `--license-key-file` at
+`../licenses/dynamsoft-dbr.txt` (see [`../licenses/README.md`](../licenses/README.md)).
 
 ```powershell
 build/Release/barcode_benchmark.exe run `
-  --images "D:/images/public-barcode-dataset/BarBeR - Dataset/dataset/images" `
+  --images "D:/images/BarBeR_Dataset/BarBeR - Dataset/dataset/images" `
   --manifest manifests/benchmark_manifest.jsonl `
   --output results/full `
   --dbr-template ReadBarcodes_Default `
   --zxing-config configs/zxing_all_supported.json `
-  --license-key-file "../../license-key.txt" `
+  --license-key-file "../licenses/dynamsoft-dbr.txt" `
   --repetitions 1
 ```
 
-Use `--decoders` to select a subset, for example `--decoders zxing-cpp,dynamsoft-dbr,scandit-linux`. Add `--scandit-license-key-file`, `--scandit-config` and `--scandit-data-dir` when the Scandit adapter is enabled. `DYNAMSOFT_LICENSE_KEY` and `SCANDIT_LICENSE_KEY` override the key files.
+Use `--decoders` to select a subset, for example `--decoders zxing-cpp,dynamsoft-dbr,scandit-linux`. Add `--scandit-license-key-file "../licenses/scandit-linux.txt"`, `--scandit-config` and `--scandit-data-dir` when the Scandit adapter is enabled. `DYNAMSOFT_LICENSE_KEY` and `SCANDIT_LICENSE_KEY` override the key files.
 
 The command is resumable. Each result key contains the sample ID, decoder, and repetition number. Existing keys are skipped safely. The raw stream is stored in `results.jsonl` so a long run can append one complete record at a time. A complete `results.json` package is also written for tools that prefer a single JSON document.
 
@@ -128,7 +135,7 @@ The full run uses one repetition on 7,894 unique BarBeR images in a single Ubunt
 
 | Decoder | Correct | Recall | Wrong reads | No read | Mean decode time | Median decode time | P95 decode time |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Dynamsoft Barcode Reader 11.6.50.29329 | **8,050 / 8,411** | **95.71%** | 85 (1.01%) | **276 (3.28%)** | 444.05 ms | 261.60 ms | 1422.82 ms |
+| Dynamsoft Barcode Reader 11.6.50.29329 | **7,968 / 8,411** | **94.73%** | 91 (1.08%) | **352 (4.19%)** | 97.02 ms | 63.21 ms | 238.85 ms |
 | Scandit Barcode Scanner SDK 8.7.1 (Linux) | 7,776 / 8,411 | 92.45% | **73 (0.87%)** | 562 (6.68%) | 105.73 ms | 89.78 ms | **229.06 ms** |
 | ZXing-C++ 3.1.1 | 6,035 / 8,411 | 71.75% | 96 (1.14%) | 2,280 (27.11%) | **70.90 ms** | **38.51 ms** | 265.90 ms |
 
@@ -139,11 +146,11 @@ The full run uses one repetition on 7,894 unique BarBeR images in a single Ubunt
 > Pharmacode One-Track on images BarBeR has no annotation for — is charged as a false positive. It
 > measures annotation coverage as much as decoder error, so it is not reported.
 
-Scandit read 1,741 more ground truth barcodes than ZXing-C++ and 274 fewer than DBR, a gap of 3.26 percentage points in recall behind DBR and 20.70 points ahead of ZXing-C++. It also produced the fewest wrong reads of the three (73, against DBR's 85 and ZXing-C++'s 96); what separates it from DBR is the no-read column, 562 against 276.
+Scandit read 1,741 more ground truth barcodes than ZXing-C++ and 192 fewer than DBR, a gap of 2.28 percentage points in recall behind DBR and 20.70 points ahead of ZXing-C++. It also produced the fewest wrong reads of the three (73, against DBR's 91 and ZXing-C++'s 96); what separates it from DBR is the no-read column, 562 against 352.
 
-Unsupported-format counts are DBR 0, Scandit 23, ZXing-C++ 227. Scandit's 23 are the JAPAN_POST (17) and POSTNET (6) annotations it has no symbology for; ZXing-C++ adds KIX, IATA_2_OF_5 and USPS Intelligent Mail to that. DBR supports every BarBeR symbology, so its whole no-read column is barcodes it did not return. Six DBR frames returned 'Operation timeout' and are counted as no-reads (`decoder_error`), never as wrong reads.
+Unsupported-format counts are DBR 0, Scandit 23, ZXing-C++ 227. Scandit's 23 are the JAPAN_POST (17) and POSTNET (6) annotations it has no symbology for; ZXing-C++ adds KIX, IATA_2_OF_5 and USPS Intelligent Mail to that. DBR supports every BarBeR symbology, so its whole no-read column is barcodes it did not return. It runs the `ReadBarcodes_Default` preset with `BF_ALL` and no barcode-count hint, so the decoder decides how many codes to look for; an earlier revision passed a dataset-level `expectedBarcodesCount` of 14, which made every one-barcode image search as if 14 were present and cost 4.3x the decode time for 82 extra reads. Six DBR frames returned 'Operation timeout' and are counted as no-reads (`decoder_error`), never as wrong reads.
 
-**Timing caveat:** four worker processes handled disjoint manifest slices on 16 logical processors, so absolute decode times include CPU contention. Compare readers only within this run; do not compare these times with the earlier single-process Windows measurement. The Linux DCV build runs the official preset template with deep-learning models and is a different binary from that Windows build.
+**Timing caveat:** four worker processes handled disjoint manifest slices on 16 logical processors, so absolute decode times include CPU contention (measured at roughly 1.3x on a 987-image subset). Compare readers only within this run; do not compare these times with the earlier single-process Windows measurement. The Linux DCV build runs the official preset template with deep-learning models and is a different binary from that Windows build.
 
 Failures are split into **wrong reads** (`wrong_text + wrong_format`) and **no read** (`not_found + unsupported_format + decoder_error`), so correct + wrong reads + no read equals the 8,411 scored ground-truth instances. A prediction that no annotation claims is not a fourth outcome — the harness cannot tell an unannotated barcode from a hallucination on BarBeR — so it is set aside rather than charged to an instance. `image_all_read_rate` is retained in `summary.json` only as a diagnostic.
 
@@ -202,7 +209,7 @@ build/Release/rematch_results.exe --results results/full_linux/results.jsonl --o
 
 ## Reproducibility
 
-Raw records include the decoder name, runtime version, config hash, manifest hash, repetition number, image load time, decode time, predictions, matches, and explicit errors. `results.jsonl` is the append-only raw stream. `results.json` contains the same records plus the summary in one JSON document. Generated benchmark manifests, results, reports, license files and the Scandit SDK are excluded from Git.
+Raw records include the decoder name, runtime version, config hash, manifest hash, repetition number, image load time, decode time, predictions, matches, and explicit errors. `results.jsonl` is the append-only raw stream; in this dataset repository it and `summary.json` are shipped so the numbers can be re-checked. The audited manifests, published results and the HTML report are included here; license files, the Dynamsoft DCV SDK, the Scandit Linux SDK, the `zxing-cpp` submodule and build outputs are excluded from Git.
 
 The measured machine and build settings are recorded in `configs/benchmark_environment.json`.
 

@@ -27,7 +27,8 @@
     "the canonical format table maps the underscored BarBeR labels (ROYAL_MAIL, IATA_2_OF_5, USPS_INTELLIGENT_MAIL) to the spellings the decoders use; v1 stripped the underscores before lookup and scored those annotations as unsupported for every reader",
     "GS1 application identifiers printed in parentheses are unwrapped for CODE_128 / GS1_128, so '(90)85320' matches the annotation '9085320'",
     "a ROYAL_MAIL payload one character shorter than the annotation counts as the same reading, because the Linux DBR build returns 10 of the 11 characters",
-    "CODE_128 and GS1_128 are one format family: GS1-128 is Code 128 carrying GS1 data (AIM ]C1 vs ]C0), not a separate symbology"
+    "CODE_128 and GS1_128 are one format family: GS1-128 is Code 128 carrying GS1 data (AIM ]C1 vs ]C0), not a separate symbology",
+    "no barcode-count hint is passed: a dataset-level maximum (the manifest holds images with 14 barcodes) made DBR search every 1-barcode image as if 14 were present, which cost 4.3x the decode time"
   ],
   "outcomes": ["correct", "wrong_text", "wrong_format", "not_found", "unsupported_format", "decoder_error"],
   "outcome_rollup": {
@@ -43,5 +44,5 @@
   "missing_payload_policy": "excluded from decoding accuracy",
   "formats": "all formats supported by each tested decoder",
   "per_image_hints": false,
-  "expected_barcode_count": "fixed dataset-level maximum"
+  "expected_barcode_count": "not set — the decoder decides how many barcodes to look for"
 }

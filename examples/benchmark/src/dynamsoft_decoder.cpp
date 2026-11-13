@@ -23,8 +23,9 @@ public:
     DynamsoftDecoder(const std::string& template_path,
                      std::string template_name,
                      const std::string& license_key,
-                     int max_symbols)
-        : template_name_(std::move(template_name))
+                     int expected_barcodes_count)
+        : template_name_(std::move(template_name)),
+          expected_barcodes_count_(expected_barcodes_count)
     {
         char error[1024] = {};
         const int license_result = CLicenseManager::InitLicense(license_key.c_str(), error, sizeof(error));
@@ -45,8 +46,15 @@ public:
                           << "); using the preset template unchanged\n";
             } else {
                 settings.barcodeSettings.barcodeFormatIds = BF_ALL;
-                settings.barcodeSettings.expectedBarcodesCount = (std::max)(1, max_symbols);
                 settings.barcodeSettings.maxThreadsInOneTask = 1;
+                // Do not invent a barcode-count hint. A dataset-level maximum
+                // (the manifest holds images with 14 barcodes) makes the decoder
+                // search every 1-barcode image as if 14 were present: measured on
+                // one image, expected=14 costs 11.7x the time of expected=1. The
+                // Web harness never sets it either, so leaving the template's own
+                // value is both faster and the only apples-to-apples setting.
+                if (expected_barcodes_count_ >= 0)
+                    settings.barcodeSettings.expectedBarcodesCount = expected_barcodes_count_;
                 result = router_->UpdateSettings(template_name_.c_str(), &settings, error, sizeof(error));
                 if (result != EC_OK)
                     std::cerr << "Dynamsoft UpdateSettings failed: " << error
@@ -106,6 +114,7 @@ public:
 
 private:
     std::string template_name_;
+    int expected_barcodes_count_;
     std::unique_ptr<CCaptureVisionRouter> router_;
 };
 
@@ -114,9 +123,10 @@ private:
 std::unique_ptr<IDecoderAdapter> createDynamsoftDecoder(const std::string& template_path,
                                                         const std::string& template_name,
                                                         const std::string& license_key,
-                                                        int max_symbols)
+                                                        int expected_barcodes_count)
 {
-    return std::make_unique<DynamsoftDecoder>(template_path, template_name, license_key, max_symbols);
+    return std::make_unique<DynamsoftDecoder>(template_path, template_name, license_key,
+                                              expected_barcodes_count);
 }
 
 } // namespace bench
