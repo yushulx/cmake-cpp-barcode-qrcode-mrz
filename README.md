@@ -43,7 +43,28 @@ ctest --test-dir build/tests -C Release --output-on-failure
 | `barcode_multipage_pdf` | `examples/command-line/multi_page.pdf` | 4 pages read, at least 4 barcodes |
 | `mrz_passport` | `images/passport-sample.jpg` | at least 1 MRZ zone parsed by `ReadPassportAndId` |
 
-The license key is read from [`license-key.txt`](./license-key.txt). Set `DYNAMSOFT_LICENSE_KEY` to use a different one; the environment variable wins over the file.
+### Setting the Dynamsoft license key
+
+[`license-key.txt`](./license-key.txt) ships with a **public evaluation key that Dynamsoft issues for one day** — enough to run the samples and CI as-is, and it is replaced whenever it lapses. For anything longer, supply your own key; it takes precedence in this order:
+
+1. the `DYNAMSOFT_LICENSE_KEY` environment variable;
+2. the `license-key.txt` file in the repository root.
+
+```bash
+# Git Bash / Linux / macOS
+export DYNAMSOFT_LICENSE_KEY="DLS2..."
+
+# or replace the file, which is what CI and the samples read by default
+echo "DLS2..." > license-key.txt
+```
+
+On Windows use **System Properties → Environment Variables**, or set it for the current session only:
+
+```
+set DYNAMSOFT_LICENSE_KEY=DLS2...
+```
+
+Apply for a free 30-day trial at the [Dynamsoft customer portal](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) and pick **Barcode Reader / DCV**; choose the *Linux x64* platform as well if you intend to run the Docker benchmark. A `24-hour Temporary license expired` error means the bundled evaluation key has lapsed — set your own as above.
 
 The GitHub Actions workflow [`.github/workflows/cmake.yml`](./.github/workflows/cmake.yml) builds `examples/command-line`, runs it against `images/AllSupportedBarcodeTypes.png`, and executes the three tests above on Windows, Linux, and macOS.
 

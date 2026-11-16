@@ -19,10 +19,20 @@ winpath() {
     if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi
 }
 
-if [[ ! -f "$BENCH_DIR/scandit-license-key.txt" ]]; then
-    echo "Missing $BENCH_DIR/scandit-license-key.txt (excluded from Git)" >&2
+# Keys come from the environment when set, otherwise from a local file. The
+# Dynamsoft key file is committed on purpose (public one-day evaluation key);
+# the Scandit file is gitignored because that key is personal.
+read_key() {
+    local env_name="$1" file="$2" what="$3"
+    local from_env="${!env_name:-}"
+    if [[ -n "$from_env" ]]; then printf '%s' "$from_env"; return 0; fi
+    if [[ -f "$file" ]]; then tr -d '\r\n' < "$file"; return 0; fi
+    echo "Missing $what: set $env_name or create $file" >&2
     exit 1
-fi
+}
+
+DBR_KEY="$(read_key DYNAMSOFT_LICENSE_KEY "$REPO_DIR/license-key.txt" "Dynamsoft license key")"
+SCANDIT_KEY="$(read_key SCANDIT_LICENSE_KEY "$BENCH_DIR/scandit-license-key.txt" "Scandit Linux license key")"
 
 docker build --platform linux/amd64 -f "$BENCH_DIR/Dockerfile" -t "$IMAGE_NAME" "$BENCH_DIR"
 
@@ -31,8 +41,8 @@ MOUNTS=(
     -v "$(winpath "$REPO_DIR")":/workspace/repo
     -v "$(winpath "$DATASET_IMAGES")":/images:ro
     -w /workspace/repo/examples/benchmark
-    -e "DYNAMSOFT_LICENSE_KEY=$(tr -d '\r\n' < "$REPO_DIR/license-key.txt")"
-    -e "SCANDIT_LICENSE_KEY=$(tr -d '\r\n' < "$BENCH_DIR/scandit-license-key.txt")"
+    -e "DYNAMSOFT_LICENSE_KEY=$DBR_KEY"
+    -e "SCANDIT_LICENSE_KEY=$SCANDIT_KEY"
 )
 
 # The Linux DCV build resolves model files relative to the directory the .so
