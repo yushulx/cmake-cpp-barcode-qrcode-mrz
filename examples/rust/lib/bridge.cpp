@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <stdio.h>
+#include <vector>
 
 #include "DynamsoftCaptureVisionRouter.h"
 #include "DynamsoftUtility.h"
@@ -104,11 +105,78 @@ static BarcodeResults *extract_barcodes(CCapturedResult *result)
     return all_barcodes;
 }
 
+static void append_barcode_items(CDecodedBarcodesResult *barcodeResult, std::vector<Barcode> &items)
+{
+    if (!barcodeResult || barcodeResult->GetErrorCode() != 0)
+    {
+        return;
+    }
+    int count = barcodeResult->GetItemsCount();
+    for (int i = 0; i < count; i++)
+    {
+        const CBarcodeResultItem *barcodeItem = barcodeResult->GetItem(i);
+        if (barcodeItem)
+        {
+            CQuadrilateral location = barcodeItem->GetLocation();
+            CPoint *points = location.points;
+
+            const char *text = barcodeItem->GetText();
+            const char *format = barcodeItem->GetFormatString();
+
+            Barcode *barcode = create_barcode(
+                format ? format : "Unknown",
+                text ? text : "",
+                (int)points[0][0], (int)points[0][1],
+                (int)points[1][0], (int)points[1][1],
+                (int)points[2][0], (int)points[2][1],
+                (int)points[3][0], (int)points[3][1]);
+            items.push_back(*barcode);
+            std::free(barcode);
+        }
+    }
+}
+
 BarcodeResults *decode_barcode_file(void *instance, const char *filename)
 {
     CCaptureVisionRouter *cvr = (CCaptureVisionRouter *)instance;
-    CCapturedResult *result = cvr->Capture(filename, CPresetTemplate::PT_READ_BARCODES);
-    return extract_barcodes(result);
+    // CaptureMultiPages rasterizes PDFs and multi-page TIFFs into one result per
+    // page; the single-page Capture() does not, so PDFs would return no barcodes.
+    CCapturedResultArray *array = cvr->CaptureMultiPages(filename, CPresetTemplate::PT_READ_BARCODES);
+
+    std::vector<Barcode> items;
+    if (array)
+    {
+        int count = array->GetResultsCount();
+        for (int i = 0; i < count; i++)
+        {
+            const CCapturedResult *result = array->GetResult(i);
+            if (!result || result->GetErrorCode() != 0)
+            {
+                continue;
+            }
+            CDecodedBarcodesResult *barcodeResult = result->GetDecodedBarcodesResult();
+            append_barcode_items(barcodeResult, items);
+            if (barcodeResult)
+            {
+                barcodeResult->Release();
+            }
+        }
+        array->Release();
+    }
+
+    if (items.empty())
+    {
+        return NULL;
+    }
+
+    BarcodeResults *all_barcodes = (BarcodeResults *)std::malloc(sizeof(BarcodeResults));
+    all_barcodes->count = (int)items.size();
+    all_barcodes->barcodes = (Barcode *)std::malloc(sizeof(Barcode) * items.size());
+    for (size_t i = 0; i < items.size(); i++)
+    {
+        all_barcodes->barcodes[i] = items[i];
+    }
+    return all_barcodes;
 }
 
 BarcodeResults *decode_barcode_buffer(void *instance, const unsigned char *bytes, int width, int height, int stride)
