@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dynamsoft Barcode Reader (Rust + Tauri)</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <div class="toolbar">
+        <button id="open" type="button">Open Image...</button>
+        <input
+          id="path"
+          type="text"
+          spellcheck="false"
+          autocomplete="off"
+          placeholder="Full path to an image or PDF..."
+        />
+        <button id="decode" type="button" class="primary" disabled>Decode</button>
+        <button id="camera" type="button">Start Camera</button>
+      </div>
+
+      <div class="content">
+        <div class="preview" id="preview">
+          <div class="stage" id="stage" hidden>
+            <img id="image" alt="Barcode preview" />
+            <canvas id="overlay"></canvas>
+          </div>
+          <span class="placeholder" id="placeholder">Image preview</span>
+        </div>
+
+        <div class="results-pane">
+          <div class="results-title">Results (<span id="count">0</span>)</div>
+          <div class="results" id="results"></div>
+        </div>
+      </div>
+
+      <div class="status" id="status">Open an image to start.</div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

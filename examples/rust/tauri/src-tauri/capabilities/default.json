@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The main window may call the app commands and listen to events. The file dialog is opened from Rust, so no dialog permission is needed here.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

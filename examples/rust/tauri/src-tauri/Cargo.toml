@@ -1,0 +1,24 @@
+[package]
+name = "barcode-reader-tauri"
+version = "0.1.0"
+edition = "2021"
+description = "Dynamsoft Barcode Reader GUI built with Tauri, sharing the native core of the Slint example"
+
+[build-dependencies]
+tauri-build = "2"
+cc = "1.0"
+walkdir = "2.5"
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+image = { version = "0.24", default-features = false, features = [
+    "png",
+    "jpeg",
+    "tiff",
+    "bmp",
+    "gif",
+    "webp",
+] }
