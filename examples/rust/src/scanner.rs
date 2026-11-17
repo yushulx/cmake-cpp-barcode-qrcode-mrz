@@ -21,10 +21,28 @@ struct BarcodeResults {
     count: c_int,
 }
 
+#[repr(C)]
+struct PageResult {
+    width: c_int,
+    height: c_int,
+    rgb: *mut u8,
+    rgb_length: c_int,
+    barcodes: *mut Barcode,
+    count: c_int,
+}
+
+#[repr(C)]
+struct PageResults {
+    pages: *mut PageResult,
+    count: c_int,
+}
+
 extern "C" {
     fn free_barcode(barcode: *mut BarcodeResults);
+    fn free_page_results(results: *mut PageResults);
     fn init_license(license: *const c_char) -> c_int;
     fn decode_barcode_file(instance: *mut c_void, filename: *const c_char) -> *mut BarcodeResults;
+    fn decode_barcode_file_pages(instance: *mut c_void, filename: *const c_char) -> *mut PageResults;
     fn decode_barcode_buffer(
         instance: *mut c_void,
         bytes: *const u8,
@@ -45,6 +63,15 @@ pub struct BarcodeResult {
     pub format: String,
     pub text: String,
     pub points: [(i32, i32); 4],
+}
+
+/// One rasterized page from a file plus the barcodes found on it.
+#[derive(Clone, Debug)]
+pub struct PageDecode {
+    pub rgb: Vec<u8>,
+    pub width: i32,
+    pub height: i32,
+    pub barcodes: Vec<BarcodeResult>,
 }
 
 pub struct BarcodeReader {
@@ -69,6 +96,7 @@ impl BarcodeReader {
     }
 
     /// Decode all barcodes in an image/PDF file. An empty vector means none were found.
+    #[allow(dead_code)] // used by the Slint example; Tauri decodes page by page
     pub fn decode(&self, file_path: &str) -> Result<Vec<BarcodeResult>, String> {
         let path_cstr = CString::new(file_path).map_err(|e| format!("Invalid file path: {e}"))?;
 
@@ -85,6 +113,16 @@ impl BarcodeReader {
             unsafe { decode_barcode_buffer(self.instance, rgb.as_ptr(), width, height, stride) };
         Ok(unsafe { collect_results(results_ptr) })
     }
+
+    /// Decode a file page by page. Each page carries the rasterized RGB888 pixels
+    /// the SDK decoded, so a PDF or multi-page TIFF can be previewed and navigated.
+    /// An empty vector means the file could not be rasterized.
+    pub fn decode_pages(&self, file_path: &str) -> Result<Vec<PageDecode>, String> {
+        let path_cstr = CString::new(file_path).map_err(|e| format!("Invalid file path: {e}"))?;
+        let results_ptr =
+            unsafe { decode_barcode_file_pages(self.instance, path_cstr.as_ptr()) };
+        Ok(unsafe { collect_pages(results_ptr) })
+    }
 }
 
 unsafe fn collect_results(results_ptr: *mut BarcodeResults) -> Vec<BarcodeResult> {
@@ -96,22 +134,57 @@ unsafe fn collect_results(results_ptr: *mut BarcodeResults) -> Vec<BarcodeResult
     if results.count > 0 && !results.barcodes.is_null() {
         let raw = std::slice::from_raw_parts(results.barcodes, results.count as usize);
         for barcode in raw {
-            let format = CStr::from_ptr(barcode.barcode_type).to_string_lossy().into_owned();
-            let text = CStr::from_ptr(barcode.barcode_value).to_string_lossy().into_owned();
-            barcodes.push(BarcodeResult {
-                format,
-                text,
-                points: [
-                    (barcode.x1, barcode.y1),
-                    (barcode.x2, barcode.y2),
-                    (barcode.x3, barcode.y3),
-                    (barcode.x4, barcode.y4),
-                ],
-            });
+            barcodes.push(to_barcode_result(barcode));
         }
     }
     free_barcode(results_ptr);
     barcodes
+}
+
+unsafe fn collect_pages(results_ptr: *mut PageResults) -> Vec<PageDecode> {
+    if results_ptr.is_null() {
+        return Vec::new();
+    }
+    let results = &*results_ptr;
+    let mut pages = Vec::new();
+    if results.count > 0 && !results.pages.is_null() {
+        let raw = std::slice::from_raw_parts(results.pages, results.count as usize);
+        for page in raw {
+            let rgb = if page.rgb_length > 0 && !page.rgb.is_null() {
+                std::slice::from_raw_parts(page.rgb, page.rgb_length as usize).to_vec()
+            } else {
+                Vec::new()
+            };
+            let mut barcodes = Vec::new();
+            if page.count > 0 && !page.barcodes.is_null() {
+                let items = std::slice::from_raw_parts(page.barcodes, page.count as usize);
+                for barcode in items {
+                    barcodes.push(to_barcode_result(barcode));
+                }
+            }
+            pages.push(PageDecode {
+                rgb,
+                width: page.width,
+                height: page.height,
+                barcodes,
+            });
+        }
+    }
+    free_page_results(results_ptr);
+    pages
+}
+
+unsafe fn to_barcode_result(barcode: &Barcode) -> BarcodeResult {
+    BarcodeResult {
+        format: CStr::from_ptr(barcode.barcode_type).to_string_lossy().into_owned(),
+        text: CStr::from_ptr(barcode.barcode_value).to_string_lossy().into_owned(),
+        points: [
+            (barcode.x1, barcode.y1),
+            (barcode.x2, barcode.y2),
+            (barcode.x3, barcode.y3),
+            (barcode.x4, barcode.y4),
+        ],
+    }
 }
 
 impl Drop for BarcodeReader {

@@ -10,12 +10,12 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use image::ImageEncoder;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 
-use crate::scanner::{self, BarcodeResult};
+use crate::media::{encode_jpeg, PageImage};
+use crate::scanner::{self, BarcodeReader, BarcodeResult};
 use crate::AppState;
 
 const LICENSE_HINT: &str = "Set a valid license in examples/rust/src/scanner.rs (DEFAULT_LICENSE).";
@@ -42,11 +42,14 @@ pub struct Preview {
 pub enum DecodeReply {
     /// Nothing was decoded; keep the current preview and results.
     Message { status: String },
-    /// `preview: None` means the input has no raster preview (a PDF).
+    /// `page`/`pages` describe the currently previewed page of the loaded file.
+    /// `preview: None` means the input could not be rasterized at all.
     Decoded {
         status: String,
         preview: Option<Preview>,
         items: Vec<BarcodeItem>,
+        page: u32,
+        pages: u32,
     },
 }
 
@@ -124,56 +127,123 @@ pub fn decode_path(state: State<AppState>, path: String) -> DecodeReply {
         }
     };
 
-    // Decode the same pixels we display. The SDK applies EXIF orientation when it
-    // reads a file itself, but the preview is re-encoded from raw pixels, so both
-    // stay in one coordinate space. PDFs fall back to letting the SDK read the file.
-    let loaded = image::io::Reader::open(&path)
-        .ok()
-        .and_then(|reader| reader.with_guessed_format().ok())
-        .and_then(|reader| reader.decode().ok());
+    // CaptureMultiPages rasterizes every page of a PDF or multi-page TIFF, and the
+    // SDK returns the exact pixels it decoded. Previewing those keeps the barcode
+    // coordinates and the displayed image in one coordinate space.
+    let mut pages: Vec<PageImage> = reader
+        .decode_pages(&path)
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|page| !page.rgb.is_empty() && page.width > 0 && page.height > 0)
+        .map(|page| PageImage {
+            rgb: page.rgb,
+            width: page.width as u32,
+            height: page.height as u32,
+            items: page.barcodes.into_iter().map(to_item).collect(),
+            jpeg: None,
+        })
+        .collect();
 
-    let (raster, decoded) = match &loaded {
-        Some(image) => {
-            let rgb = image.to_rgb8();
-            let (width, height) = (rgb.width(), rgb.height());
-            let decoded = reader.decode_buffer(rgb.as_raw(), width as i32, height as i32);
-            let png = encode_png(rgb.as_raw(), width, height).map(|png| (png, width, height));
-            (png, decoded)
+    // The SDK cannot rasterize every format the dialog accepts (WebP, for one).
+    // Fall back to the image crate for those so the preview still appears.
+    if pages.is_empty() {
+        if let Some(page) = decode_with_image_crate(&path, reader) {
+            pages.push(page);
         }
-        None => (None, reader.decode(&path)),
+    }
+
+    let mut store = state.media.lock().unwrap();
+    store.pages = pages;
+    store.current = 0;
+    store.preview_seq += 1;
+
+    let page_count = store.pages.len() as u32;
+    let total: usize = store.pages.iter().map(|page| page.items.len()).sum();
+    let preview = store.pages.first().map(|page| Preview {
+        seq: store.preview_seq,
+        width: page.width,
+        height: page.height,
+    });
+    let items = store
+        .pages
+        .first()
+        .map(|page| page.items.clone())
+        .unwrap_or_default();
+    drop(store);
+
+    let status = if total == 0 {
+        "No barcode found.".to_string()
+    } else if page_count > 1 {
+        format!("Decoded {total} barcode(s) across {page_count} pages.")
+    } else {
+        format!("Decoded {total} barcode(s).")
     };
 
-    let preview = raster.map(|(png, width, height)| {
-        let mut store = state.media.lock().unwrap();
-        store.preview_png = png;
-        store.preview_seq += 1;
-        Preview {
-            seq: store.preview_seq,
-            width,
-            height,
-        }
-    });
-
-    match decoded {
-        Ok(barcodes) => {
-            let count = barcodes.len();
-            let status = if count == 0 {
-                "No barcode found.".to_string()
-            } else {
-                format!("Decoded {count} barcode(s).")
-            };
-            DecodeReply::Decoded {
-                status,
-                preview,
-                items: barcodes.into_iter().map(to_item).collect(),
-            }
-        }
-        Err(err) => DecodeReply::Decoded {
-            status: format!("Decode error: {err}"),
-            preview,
-            items: Vec::new(),
-        },
+    DecodeReply::Decoded {
+        status,
+        preview,
+        items,
+        page: 0,
+        pages: page_count,
     }
+}
+
+/// Switches the previewed page of the loaded file and returns that page's results.
+#[tauri::command]
+pub fn set_page(state: State<AppState>, page: u32) -> DecodeReply {
+    let mut store = state.media.lock().unwrap();
+    if store.pages.is_empty() {
+        return DecodeReply::Message {
+            status: "No document loaded.".into(),
+        };
+    }
+
+    let index = (page as usize).min(store.pages.len() - 1);
+    store.current = index;
+    store.preview_seq += 1;
+
+    let pages = store.pages.len() as u32;
+    let current = &store.pages[index];
+    let preview = Preview {
+        seq: store.preview_seq,
+        width: current.width,
+        height: current.height,
+    };
+    let items = current.items.clone();
+
+    DecodeReply::Decoded {
+        status: format!("Page {} of {pages}.", index + 1),
+        preview: Some(preview),
+        items,
+        page: index as u32,
+        pages,
+    }
+}
+
+/// Raster formats the SDK does not decode: preview the decoded pixels and run the
+/// SDK's buffer path on that same buffer.
+fn decode_with_image_crate(path: &str, reader: &BarcodeReader) -> Option<PageImage> {
+    let image = image::io::Reader::open(path)
+        .ok()?
+        .with_guessed_format()
+        .ok()?
+        .decode()
+        .ok()?;
+    let rgb = image.to_rgb8();
+    let (width, height) = (rgb.width(), rgb.height());
+    let items = reader
+        .decode_buffer(rgb.as_raw(), width as i32, height as i32)
+        .unwrap_or_default()
+        .into_iter()
+        .map(to_item)
+        .collect();
+    Some(PageImage {
+        rgb: rgb.into_raw(),
+        width,
+        height,
+        items,
+        jpeg: None,
+    })
 }
 
 #[tauri::command]
@@ -222,11 +292,24 @@ fn spawn_camera(app: AppHandle, stop: Arc<AtomicBool>) {
         };
 
         let mut last_frame = Instant::now();
+        let mut first_frame = true;
         while !stop.load(Ordering::Relaxed) {
             let Some(frame) = camera.grab() else {
+                // The device can open while another app (a browser tab, Teams, ...)
+                // keeps it busy; ReadSample then fails forever. Fail loudly instead
+                // of leaving the UI on "Starting camera...".
+                if first_frame && last_frame.elapsed() > Duration::from_secs(3) {
+                    return camera_failed(
+                        &app,
+                        "Camera opened but delivered no frames. Close other apps using the \
+                         camera (browser tabs, video calls) and try again."
+                            .into(),
+                    );
+                }
                 thread::sleep(Duration::from_millis(10));
                 continue;
             };
+            first_frame = false;
 
             // Cap the stream near 30 fps so decoding and JPEG encoding do not
             // flood the event channel with frames the webview never shows.
@@ -273,26 +356,6 @@ fn spawn_camera(app: AppHandle, stop: Arc<AtomicBool>) {
 fn camera_failed(app: &AppHandle, err: String) {
     app.state::<AppState>().camera_stop.lock().unwrap().take();
     let _ = app.emit("camera-error", err);
-}
-
-fn encode_png(rgb: &[u8], width: u32, height: u32) -> Option<Vec<u8>> {
-    let mut png = Vec::new();
-    image::codecs::png::PngEncoder::new_with_quality(
-        &mut png,
-        image::codecs::png::CompressionType::Fast,
-        image::codecs::png::FilterType::Adaptive,
-    )
-    .write_image(rgb, width, height, image::ColorType::Rgb8)
-    .ok()?;
-    Some(png)
-}
-
-fn encode_jpeg(rgb: &[u8], width: u32, height: u32) -> Option<Vec<u8>> {
-    let mut jpeg = Vec::new();
-    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg, 80)
-        .write_image(rgb, width, height, image::ColorType::Rgb8)
-        .ok()?;
-    Some(jpeg)
 }
 
 fn to_item(barcode: BarcodeResult) -> BarcodeItem {

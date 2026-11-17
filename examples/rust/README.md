@@ -47,7 +47,7 @@ Or on Windows, double-click `run-ui.bat`. In the window:
 2. The left pane shows the image; the right pane lists each barcode's **format**, **text**, and four corner **coordinates**.
 3. The status bar reports the decoded count or any error.
 
-> The image preview supports JPEG, PNG, TIFF, BMP, GIF, and WebP. PDFs are decoded but not previewed.
+> The Slint preview supports JPEG, PNG, TIFF, BMP, GIF, and WebP; PDFs are decoded but not previewed. The Tauri UI additionally previews every page of PDFs and multi-page TIFFs with a pager.
 
 ### Desktop UI (Tauri)
 

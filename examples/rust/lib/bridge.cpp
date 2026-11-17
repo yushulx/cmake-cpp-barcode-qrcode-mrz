@@ -179,6 +179,215 @@ BarcodeResults *decode_barcode_file(void *instance, const char *filename)
     return all_barcodes;
 }
 
+// Copies a page image into a freshly allocated RGB888 buffer. The SDK keeps the
+// original page image it rasterized (PDF pages included); GetOriginalImage()
+// hands it back so the GUI can show exactly what was decoded.
+static unsigned char *image_to_rgb(const CImageData *image, int *out_length)
+{
+    if (!image)
+    {
+        return NULL;
+    }
+    int width = image->GetWidth();
+    int height = image->GetHeight();
+    int stride = image->GetStride();
+    const unsigned char *src = image->GetBytes();
+    if (width <= 0 || height <= 0 || !src)
+    {
+        return NULL;
+    }
+
+    ImagePixelFormat format = image->GetImagePixelFormat();
+    bool supported = format == IPF_RGB_888 || format == IPF_BGR_888 ||
+                     format == IPF_GRAYSCALED || format == IPF_BINARY_8 ||
+                     format == IPF_BINARY_8_INVERTED || format == IPF_ARGB_8888 ||
+                     format == IPF_ABGR_8888 || format == IPF_BINARY ||
+                     format == IPF_BINARYINVERTED;
+    if (!supported)
+    {
+        return NULL;
+    }
+
+    int length = width * height * 3;
+    unsigned char *rgb = (unsigned char *)std::malloc(length);
+    if (!rgb)
+    {
+        return NULL;
+    }
+
+    for (int y = 0; y < height; y++)
+    {
+        const unsigned char *row = src + (size_t)y * stride;
+        unsigned char *dst = rgb + (size_t)y * width * 3;
+        for (int x = 0; x < width; x++)
+        {
+            unsigned char r = 0, g = 0, b = 0;
+            switch (format)
+            {
+            case IPF_RGB_888:
+            case IPF_BGR_888:
+            {
+                // CFileFetcher returns BGR bytes for both labels on this SDK build
+                // (verified with a red/green/blue test image), so always swap.
+                const unsigned char *p = row + x * 3;
+                r = p[2];
+                g = p[1];
+                b = p[0];
+                break;
+            }
+            case IPF_GRAYSCALED:
+            case IPF_BINARY_8:
+                r = g = b = row[x];
+                break;
+            case IPF_BINARY_8_INVERTED:
+                r = g = b = (unsigned char)(255 - row[x]);
+                break;
+            case IPF_ARGB_8888:
+            {
+                const unsigned char *p = row + x * 4;
+                r = p[1];
+                g = p[2];
+                b = p[3];
+                break;
+            }
+            case IPF_ABGR_8888:
+            {
+                const unsigned char *p = row + x * 4;
+                r = p[3];
+                g = p[2];
+                b = p[1];
+                break;
+            }
+            case IPF_BINARY:
+            case IPF_BINARYINVERTED:
+            {
+                int bit = (row[x >> 3] >> (7 - (x & 7))) & 1;
+                bool white = format == IPF_BINARY ? bit == 1 : bit == 0;
+                r = g = b = white ? 255 : 0;
+                break;
+            }
+            default:
+                break;
+            }
+            dst[x * 3] = r;
+            dst[x * 3 + 1] = g;
+            dst[x * 3 + 2] = b;
+        }
+    }
+
+    *out_length = length;
+    return rgb;
+}
+
+PageResults *decode_barcode_file_pages(void *instance, const char *filename)
+{
+    CCaptureVisionRouter *cvr = (CCaptureVisionRouter *)instance;
+    // CFileFetcher splits a multi-page PDF or TIFF into one CImageData per page.
+    // Rasterizing through it lets the GUI preview the very bitmap that gets decoded.
+    CFileFetcher fetcher;
+    if (fetcher.SetFile(filename) != EC_OK)
+    {
+        return NULL;
+    }
+
+    std::vector<PageResult> pages;
+    while (fetcher.HasNextImageToFetch())
+    {
+        CImageData *image = fetcher.GetImage();
+        if (!image)
+        {
+            break;
+        }
+
+        PageResult page;
+        page.width = 0;
+        page.height = 0;
+        page.rgb = image_to_rgb(image, &page.rgb_length);
+        if (page.rgb)
+        {
+            page.width = image->GetWidth();
+            page.height = image->GetHeight();
+        }
+        page.barcodes = NULL;
+        page.count = 0;
+
+        CCapturedResult *result = cvr->Capture(image, CPresetTemplate::PT_READ_BARCODES);
+        if (result)
+        {
+            if (result->GetErrorCode() == 0)
+            {
+                CDecodedBarcodesResult *barcodeResult = result->GetDecodedBarcodesResult();
+                std::vector<Barcode> items;
+                append_barcode_items(barcodeResult, items);
+                if (barcodeResult)
+                {
+                    barcodeResult->Release();
+                }
+                if (!items.empty())
+                {
+                    page.count = (int)items.size();
+                    page.barcodes = (Barcode *)std::malloc(sizeof(Barcode) * items.size());
+                    for (size_t k = 0; k < items.size(); k++)
+                    {
+                        page.barcodes[k] = items[k];
+                    }
+                }
+            }
+            result->Release();
+        }
+
+        if (page.rgb || page.count > 0)
+        {
+            pages.push_back(page);
+        }
+        else if (page.barcodes)
+        {
+            std::free(page.barcodes);
+        }
+    }
+
+    if (pages.empty())
+    {
+        return NULL;
+    }
+
+    PageResults *results = (PageResults *)std::malloc(sizeof(PageResults));
+    results->count = (int)pages.size();
+    results->pages = (PageResult *)std::malloc(sizeof(PageResult) * pages.size());
+    for (size_t i = 0; i < pages.size(); i++)
+    {
+        results->pages[i] = pages[i];
+    }
+    return results;
+}
+
+void free_page_results(PageResults *results)
+{
+    if (!results)
+    {
+        return;
+    }
+    for (int i = 0; i < results->count; i++)
+    {
+        PageResult *page = &results->pages[i];
+        for (int j = 0; j < page->count; j++)
+        {
+            std::free((void *)page->barcodes[j].barcode_type);
+            std::free((void *)page->barcodes[j].barcode_value);
+        }
+        if (page->barcodes)
+        {
+            std::free(page->barcodes);
+        }
+        if (page->rgb)
+        {
+            std::free(page->rgb);
+        }
+    }
+    std::free(results->pages);
+    std::free(results);
+}
+
 BarcodeResults *decode_barcode_buffer(void *instance, const unsigned char *bytes, int width, int height, int stride)
 {
     CCaptureVisionRouter *cvr = (CCaptureVisionRouter *)instance;

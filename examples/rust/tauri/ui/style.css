@@ -135,6 +135,31 @@ button.primary:disabled {
   color: var(--muted);
 }
 
+.pager {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  transform: translateX(-50%);
+}
+
+.pager button {
+  padding: 2px 10px;
+}
+
+#pageLabel {
+  min-width: 78px;
+  color: #444444;
+  font-size: 12px;
+  text-align: center;
+}
+
 .results-pane {
   display: flex;
   flex: 2;
