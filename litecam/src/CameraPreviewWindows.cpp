@@ -176,12 +176,21 @@ void CameraWindow::ShowFrame(const unsigned char *rgbData, int frameWidth, int f
     bmpInfo.bmiHeader.biBitCount = 24; // 24 bits (3 bytes per pixel for RGB)
     bmpInfo.bmiHeader.biCompression = BI_RGB;
 
+    // GDI 24bpp BI_RGB DIBs are BGR-ordered, but the frame buffer is RGB.
+    std::vector<unsigned char> bgr(static_cast<size_t>(frameWidth) * frameHeight * 3);
+    for (size_t i = 0; i < bgr.size(); i += 3)
+    {
+        bgr[i] = rgbData[i + 2];
+        bgr[i + 1] = rgbData[i + 1];
+        bgr[i + 2] = rgbData[i];
+    }
+
     // Draw the frame
     StretchDIBits(
         hdc,
         0, 0, frameWidth, frameHeight, // Destination rectangle
         0, 0, frameWidth, frameHeight, // Source rectangle
-        rgbData,                       // RGB pixel data
+        bgr.data(),                    // BGR pixel data
         &bmpInfo,                      // Bitmap information
         DIB_RGB_COLORS,                // Color format
         SRCCOPY                        // Raster operation
