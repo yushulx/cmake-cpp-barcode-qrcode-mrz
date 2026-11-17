@@ -1,0 +1,24 @@
+[package]
+name = "dbr"
+version = "11.6.50"
+edition = "2021"
+description = "Dynamsoft Barcode Reader SDK wrapper: read QR Code, DataMatrix, PDF417, Code 128 and more from images, PDFs and raw pixel buffers"
+license = "MIT"
+repository = "https://github.com/yushulx/cmake-cpp-barcode-qrcode-mrz"
+homepage = "https://www.dynamsoft.com/capture-vision/docs/core/introduction/"
+documentation = "https://docs.rs/dbr"
+keywords = ["barcode", "qrcode", "pdf417", "datamatrix", "decoder"]
+categories = ["multimedia::images", "api-bindings"]
+readme = "README.md"
+links = "dbr"
+
+[dependencies]
+
+[dev-dependencies]
+image = "0.24"
+
+[build-dependencies]
+cc = "1.0"
+ureq = "2.9"
+zip = "0.6"
+sha2 = "0.10"
