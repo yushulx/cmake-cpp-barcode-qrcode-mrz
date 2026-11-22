@@ -98,7 +98,8 @@ void ProcessFrames(CCaptureVisionRouter *cvr, ThreadSafeQueue<FrameData> &frameQ
                     for (int i = 0; i < count; i++)
                     {
                         const CBarcodeResultItem *barcodeResultItem = barcodeResult->GetItem(i);
-                        CPoint *points = barcodeResultItem->GetLocation().points;
+                        CQuadrilateral quad = barcodeResultItem->GetLocation(); // Keep the returned value alive before reading points
+                        CPoint *points = quad.points;
 
                         std::vector<std::pair<int, int>> corners = {
                             {points[0][0], points[0][1]},

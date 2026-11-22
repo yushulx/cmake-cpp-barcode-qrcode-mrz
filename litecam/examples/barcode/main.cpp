@@ -81,7 +81,8 @@ int main()
                         for (int i = 0; i < count; i++)
                         {
                             const CBarcodeResultItem *barcodeResultItem = barcodeResult->GetItem(i);
-                            CPoint *points = barcodeResultItem->GetLocation().points;
+                            CQuadrilateral quad = barcodeResultItem->GetLocation(); // Keep the returned value alive before reading points
+                            CPoint *points = quad.points;
                             int x = points[0][0];
                             int y = points[0][1];
 
