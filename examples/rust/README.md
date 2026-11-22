@@ -4,6 +4,7 @@ A barcode scanner implemented in Rust, using FFI bindings to the Dynamsoft Barco
 
 - **`barcode-scanner`** — the original command-line tool (interactive + batch modes).
 - **`barcode-reader-ui`** — a desktop GUI built with [Slint](https://slint.dev) that previews the image and lists every decoded barcode.
+- **[`tauri/`](tauri/)** — a second desktop GUI with identical features, built with [Tauri](https://tauri.app) (Rust backend + HTML/CSS/JS frontend). It reuses the same native decoding core and is meant as a teaching example; see [`tauri/README.md`](tauri/README.md) for a walkthrough of how Tauri wraps the native library.
 
 ## Features
 
@@ -47,6 +48,17 @@ Or on Windows, double-click `run-ui.bat`. In the window:
 3. The status bar reports the decoded count or any error.
 
 > The image preview supports JPEG, PNG, TIFF, BMP, GIF, and WebP. PDFs are decoded but not previewed.
+
+### Desktop UI (Tauri)
+
+The [`tauri/`](tauri/) subfolder is a separate crate that reproduces the Slint GUI with a web frontend:
+
+```bash
+cd examples/rust/tauri
+cargo run --release
+```
+
+Or on Windows, double-click `tauri/run.bat`. It offers the same Open Image / path / Decode / Camera workflow and the same results list. [`tauri/README.md`](tauri/README.md) explains the Tauri-specific pieces (commands, events, custom `media:` protocol, state, capabilities, CSP) and maps each one back to its Slint equivalent.
 
 ### Interactive Mode
 
