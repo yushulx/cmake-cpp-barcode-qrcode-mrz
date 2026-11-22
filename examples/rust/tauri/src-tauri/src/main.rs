@@ -43,6 +43,7 @@ fn main() {
             commands::startup_status,
             commands::open_image,
             commands::decode_path,
+            commands::set_page,
             commands::start_camera,
             commands::stop_camera,
         ])

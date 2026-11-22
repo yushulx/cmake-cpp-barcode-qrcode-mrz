@@ -11,7 +11,8 @@ and camera capture behave identically. Only the presentation layer differs.
 ## Features (identical to the Slint UI)
 
 - Open an image or PDF through a native file dialog, or type/paste a path and press **Decode** (Enter works too)
-- Image preview with a cyan quadrilateral drawn over every decoded barcode
+- Page preview with a cyan quadrilateral drawn over every decoded barcode
+- Multi-page PDFs and TIFFs: prev/next pager and left/right arrow keys switch pages
 - Results list showing each barcode's **format**, **text** and four corner **coordinates**
 - Live camera scanning with the same preview, overlay and results
 - Status bar reporting the decoded count or the error
@@ -57,7 +58,7 @@ tauri/
     └── src/
         ├── main.rs         # Builder: state, plugin, protocol, invoke_handler
         ├── commands.rs     # #[tauri::command] handlers + camera worker thread
-        └── media.rs        # custom `media:` URI scheme serving PNG/JPEG bytes
+        └── media.rs        # custom `media:` URI scheme serving page/camera JPEG bytes
 ```
 
 ## How the two halves talk
@@ -68,8 +69,8 @@ webview (ui/app.js)                         Rust (src-tauri/src)
 invoke("decode_path", { path })   ───────►  #[tauri::command] fn decode_path
         ◄─────── DecodeReply (JSON) ────────┘
 listen("camera-frame")            ◄───────  app.emit("camera-frame", CameraFrame)
-<img src="media:…/preview.png">   ───────►  register_uri_scheme_protocol("media")
-        ◄─────── image/png bytes ──────────┘
+<img src="media:…/preview.jpg">   ───────►  register_uri_scheme_protocol("media")
+        ◄─────── image/jpeg bytes ─────────┘
 ```
 
 Three channels, three jobs: **commands** for request/response, **events** for
@@ -140,8 +141,9 @@ event channel with frames the webview would drop anyway.
 ### 4. A custom URI scheme for pixels
 
 Sending a 1280×720 frame as base64 through IPC on every tick would waste megabytes
-a second. Instead Rust keeps the latest preview PNG and camera JPEG in `MediaStore`
-and serves them over a registered scheme:
+a second. Instead Rust keeps the loaded pages and the latest camera JPEG in
+`MediaStore` and serves them over a registered scheme. The current page is
+JPEG-encoded lazily on first view, cached, and its raw buffer is dropped:
 
 ```rust
 .register_uri_scheme_protocol("media", media::handle)
@@ -189,10 +191,18 @@ resolves them at runtime from the module directory.
 
 - **License**: shared with the other examples via `../src/scanner.rs`
   (`DEFAULT_LICENSE`). A bad key is reported in the status bar at startup.
-- **Coordinate space**: the preview is re-encoded from raw RGB and the SDK decodes
-  that same buffer, so EXIF-rotated photos cannot desync the overlay.
-- **PDF**: decoded by the SDK, but not previewed (same as Slint).
+- **Coordinate space**: the SDK rasterizes each page and the bridge decodes that
+  same bitmap, so the preview and barcode points cannot desync (EXIF-rotated
+  photos included).
+- **Multi-page**: PDFs and multi-page TIFFs are split page by page with
+  `CFileFetcher`; the pager and arrow keys call `set_page`, which swaps the
+  current page without re-decoding the file.
+- **Colour order**: on this SDK build `CFileFetcher` returns BGR bytes while
+  reporting `IPF_RGB_888`; the bridge swaps red and blue for page rasters. The
+  camera path is separate and stays RGB.
 - **Camera**: Windows only, via the bundled `litecam` (Media Foundation) library.
-  Other platforms get the same status message as the Slint example.
-- **Image formats**: JPEG, PNG, TIFF, BMP, GIF and WebP are previewed; anything
-  else the `image` crate cannot read falls back to SDK-side file decoding.
+  Other platforms get the same status message as the Slint example. If another
+  app holds the camera, the worker now reports a clear error after three seconds
+  without a frame instead of staying on "Starting camera...".
+- **Image formats**: JPEG, PNG, TIFF, BMP, GIF, WebP and PDF are previewed;
+  anything the SDK cannot rasterize falls back to the `image` crate.

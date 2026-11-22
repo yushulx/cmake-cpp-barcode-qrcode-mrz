@@ -16,9 +16,22 @@ const el = {
   results: document.getElementById("results"),
   count: document.getElementById("count"),
   status: document.getElementById("status"),
+  pager: document.getElementById("pager"),
+  prev: document.getElementById("prev"),
+  next: document.getElementById("next"),
+  pageLabel: document.getElementById("pageLabel"),
 };
 
-const view = { hasPreview: false, width: 0, height: 0, items: [], cameraOn: false };
+const view = {
+  hasPreview: false,
+  imageReady: false,
+  width: 0,
+  height: 0,
+  items: [],
+  cameraOn: false,
+  page: 0,
+  pages: 0,
+};
 
 // The Rust side serves pixels over a custom `media:` scheme; convertFileSrc
 // builds the right URL for each platform (http://media.localhost on Windows).
@@ -35,10 +48,13 @@ function setCameraOn(on) {
   el.camera.textContent = on ? "Stop Camera" : "Start Camera";
 }
 
-function showPreview(url, width, height) {
+function showPreview(url, width, height, waitForLoad = false) {
   view.hasPreview = true;
   view.width = width;
   view.height = height;
+  // File pages wait for the <img> load event before the overlay is drawn; a
+  // camera frame already has the previous frame on screen and must not flicker.
+  view.imageReady = !waitForLoad;
   el.image.src = url;
   el.stage.hidden = false;
   el.placeholder.hidden = true;
@@ -47,11 +63,25 @@ function showPreview(url, width, height) {
 
 function clearPreview() {
   view.hasPreview = false;
+  view.imageReady = false;
   view.width = 0;
   view.height = 0;
+  view.page = 0;
+  view.pages = 0;
   el.image.removeAttribute("src");
   el.stage.hidden = true;
   el.placeholder.hidden = false;
+  updatePager();
+}
+
+// Multi-page PDFs/TIFFs get a pager under the preview; single images hide it.
+function updatePager() {
+  const show = view.hasPreview && view.pages > 1;
+  el.pager.hidden = !show;
+  if (!show) return;
+  el.pageLabel.textContent = `Page ${view.page + 1} / ${view.pages}`;
+  el.prev.disabled = view.page <= 0;
+  el.next.disabled = view.page >= view.pages - 1;
 }
 
 // Letterbox the image inside the preview pane, then give the overlay canvas the
@@ -75,15 +105,17 @@ function layout() {
 function drawOverlay(scale) {
   const ctx = el.overlay.getContext("2d");
   ctx.clearRect(0, 0, el.overlay.width, el.overlay.height);
-  if (!view.items.length) return;
+  // Wait for the new pixels to be on screen; drawing boxes over the previous
+  // image (or a blank stage) while the new page decodes looks broken.
+  if (!view.imageReady || !view.items.length) return;
   ctx.lineWidth = Math.max(1, 2 / scale);
   ctx.strokeStyle = "#00b0ff";
-  ctx.fillStyle = "rgba(0, 176, 255, 0.125)";
+  // Stroke only: a translucent fill would tint the barcode and make a small
+  // QR look colour-shifted once the preview is scaled down.
   for (const item of view.items) {
     ctx.beginPath();
     item.points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
     ctx.closePath();
-    ctx.fill();
     ctx.stroke();
   }
 }
@@ -120,22 +152,46 @@ function renderResults(items) {
   layout();
 }
 
-async function decode(path) {
-  setCameraOn(false); // the backend stops the camera before decoding a file
-  const reply = await invoke("decode_path", { path });
+// Shared by a fresh decode and by page switches: both replies carry the preview
+// and the results of whichever page is current.
+function applyDecoded(reply) {
   setStatus(reply.status);
-  if (reply.kind === "message") return;
-
-  renderResults(reply.items);
+  view.page = reply.page ?? 0;
+  view.pages = reply.pages ?? 0;
   if (reply.preview) {
     showPreview(
-      mediaUrl("preview.png", reply.preview.seq),
+      mediaUrl("preview.jpg", reply.preview.seq),
       reply.preview.width,
       reply.preview.height,
+      true,
     );
   } else {
     clearPreview();
   }
+  renderResults(reply.items);
+  updatePager();
+}
+
+async function decode(path) {
+  setCameraOn(false); // the backend stops the camera before decoding a file
+  const reply = await invoke("decode_path", { path });
+  if (reply.kind === "message") {
+    setStatus(reply.status);
+    return;
+  }
+  applyDecoded(reply);
+}
+
+async function gotoPage(delta) {
+  if (view.pages <= 1) return;
+  const target = view.page + delta;
+  if (target < 0 || target >= view.pages) return;
+  const reply = await invoke("set_page", { page: target });
+  if (reply.kind === "message") {
+    setStatus(reply.status);
+    return;
+  }
+  applyDecoded(reply);
 }
 
 el.open.addEventListener("click", async () => {
@@ -151,6 +207,20 @@ el.open.addEventListener("click", async () => {
 });
 
 el.decode.addEventListener("click", () => decode(el.path.value));
+
+el.prev.addEventListener("click", () => gotoPage(-1));
+el.next.addEventListener("click", () => gotoPage(1));
+
+document.addEventListener("keydown", (event) => {
+  if (view.pages <= 1 || event.target === el.path) return;
+  if (event.key === "ArrowLeft") {
+    gotoPage(-1);
+    event.preventDefault();
+  } else if (event.key === "ArrowRight") {
+    gotoPage(1);
+    event.preventDefault();
+  }
+});
 
 el.path.addEventListener("input", () => {
   el.decode.disabled = el.path.value.trim() === "";
@@ -180,8 +250,11 @@ el.camera.addEventListener("click", async () => {
 
 await listen("camera-frame", (event) => {
   const frame = event.payload;
+  view.page = 0;
+  view.pages = 0;
   showPreview(mediaUrl("camera.jpg", frame.seq), frame.width, frame.height);
   renderResults(frame.items);
+  updatePager();
   setStatus(`Camera: ${frame.items.length} barcode(s)`);
 });
 
@@ -191,6 +264,12 @@ await listen("camera-error", (event) => {
 });
 
 new ResizeObserver(layout).observe(el.preview);
+
+// Draw the barcode boxes only once the new page/frame is actually visible.
+el.image.addEventListener("load", () => {
+  view.imageReady = true;
+  layout();
+});
 
 const startupError = await invoke("startup_status");
 if (startupError) setStatus(startupError);

@@ -82,6 +82,14 @@ fn main() {
     }
     cpp.compile("bridge");
 
+    // The C++ bridge is edited together with the Tauri example; make sure cargo
+    // recompiles it even though build.rs emits other cargo directives.
+    println!("cargo:rerun-if-changed=lib/bridge.cpp");
+    println!("cargo:rerun-if-changed=lib/bridge.h");
+    if target_os == "windows" {
+        println!("cargo:rerun-if-changed=lib/camera_bridge.cpp");
+    }
+
     // Tell cargo to tell rustc to link the compiled C library
     println!("cargo:rustc-link-lib=static=bridge");
 
