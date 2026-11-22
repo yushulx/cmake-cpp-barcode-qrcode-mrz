@@ -32,17 +32,7 @@ void ConvertYUY2ToRGB(const unsigned char *yuy2Data, unsigned char *rgbData, int
         unsigned char y2 = yuy2Data[i + 2];
         unsigned char v = yuy2Data[i + 3];
 
-#ifdef _WIN32
-        // Convert first pixel (Y1, U, V) to RGB
-        rgbData[rgbIndex++] = clamp(y1 + 1.772 * (u - 128), 0.0, 255.0);
-        rgbData[rgbIndex++] = clamp(y1 - 0.344136 * (u - 128) - 0.714136 * (v - 128), 0.0, 255.0);
-        rgbData[rgbIndex++] = clamp(y1 + 1.402 * (v - 128), 0.0, 255.0);
-
-        // Convert second pixel (Y2, U, V) to RGB
-        rgbData[rgbIndex++] = clamp(y2 + 1.772 * (u - 128), 0.0, 255.0);
-        rgbData[rgbIndex++] = clamp(y2 - 0.344136 * (u - 128) - 0.714136 * (v - 128), 0.0, 255.0);
-        rgbData[rgbIndex++] = clamp(y2 + 1.402 * (v - 128), 0.0, 255.0);
-#else
+        // FrameData::rgbData is RGB on every platform; GDI previews swap it themselves.
         // Convert first pixel (Y1, U, V) to RGB
         rgbData[rgbIndex++] = clamp(y1 + 1.402 * (v - 128), 0.0, 255.0);
         rgbData[rgbIndex++] = clamp(y1 - 0.344136 * (u - 128) - 0.714136 * (v - 128), 0.0, 255.0);
@@ -52,7 +42,6 @@ void ConvertYUY2ToRGB(const unsigned char *yuy2Data, unsigned char *rgbData, int
         rgbData[rgbIndex++] = clamp(y2 + 1.402 * (v - 128), 0.0, 255.0);
         rgbData[rgbIndex++] = clamp(y2 - 0.344136 * (u - 128) - 0.714136 * (v - 128), 0.0, 255.0);
         rgbData[rgbIndex++] = clamp(y2 + 1.772 * (u - 128), 0.0, 255.0);
-#endif
     }
 }
 
