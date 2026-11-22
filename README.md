@@ -99,19 +99,7 @@ This repository contains examples demonstrating how to utilize the **Dynamsoft B
 
 ## Examples
 - [Command Line](./examples/command-line)
-        
-    ![Raspberry Pi Barcode Reader](https://www.dynamsoft.com/codepool/img/2016/03/rpi_dbr_result.png)
-
 - [Barcode Image File](./examples/opencv_file)
-    
-    ![Read barcodes from an image file](https://www.dynamsoft.com/codepool/img/2024/05/cpp-barcode-reader-opencv.jpg)
-
-
 - [Camera Scanning](./examples/opencv_camera)
-    
-    ![Camera barcode QR detection](https://www.dynamsoft.com/codepool/img/2024/05/cpp-barcode-scanner-opencv.jpg)
-
 - [WebP](./examples/webp/)
-
-    ![Read barcodes from WebP image](https://www.dynamsoft.com/codepool/img/2024/06/cpp-decode-webp-barcode-qr-code.jpg)
 
