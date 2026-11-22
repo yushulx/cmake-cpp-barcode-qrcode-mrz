@@ -322,6 +322,15 @@
                     {
                         "Mode": "LM_GENERAL"
                     }
+                ],
+                "OrientationDetectionModes":[
+                    {
+                        "Mode": "ODM_SPATIAL_REFERENCES"
+                    },
+                    {
+                        "Mode": "ODM_CHARS_ORIENTATION_NEURAL_NETWORK",
+                        "ModelNameArray": ["TextLineOrientationCls"]
+                    }
                 ]
             }
           ]
@@ -374,6 +383,15 @@
                     },
                     {
                         "Mode": "LM_GENERAL"
+                    }
+                ],
+                "OrientationDetectionModes":[
+                    {
+                        "Mode": "ODM_SPATIAL_REFERENCES"
+                    },
+                    {
+                        "Mode": "ODM_CHARS_ORIENTATION_NEURAL_NETWORK",
+                        "ModelNameArray": ["TextLineOrientationCls"]
                     }
                 ]
             }
@@ -429,6 +447,15 @@
                     {
                         "Mode": "LM_GENERAL"
                     }
+                ],
+                "OrientationDetectionModes":[
+                    {
+                        "Mode": "ODM_SPATIAL_REFERENCES"
+                    },
+                    {
+                        "Mode": "ODM_CHARS_ORIENTATION_NEURAL_NETWORK",
+                        "ModelNameArray": ["TextLineOrientationCls"]
+                    }
                 ]
             }
           ]
@@ -481,6 +508,15 @@
                     },
                     {
                         "Mode": "LM_GENERAL"
+                    }
+                ],
+                "OrientationDetectionModes":[
+                    {
+                        "Mode": "ODM_SPATIAL_REFERENCES"
+                    },
+                    {
+                        "Mode": "ODM_CHARS_ORIENTATION_NEURAL_NETWORK",
+                        "ModelNameArray": ["TextLineOrientationCls"]
                     }
                 ]
             }
@@ -538,6 +574,15 @@
                     {
                         "Mode": "LM_GENERAL"
                     }
+                ],
+                "OrientationDetectionModes":[
+                    {
+                        "Mode": "ODM_SPATIAL_REFERENCES"
+                    },
+                    {
+                        "Mode": "ODM_CHARS_ORIENTATION_NEURAL_NETWORK",
+                        "ModelNameArray": ["TextLineOrientationCls"]
+                    }
                 ]
             }
           ]
@@ -592,6 +637,9 @@
       "ModelArgs": {
         "InputImageLongerEdge": 640
       }
+    },
+    {
+      "Name": "TextLineOrientationCls"
     }
   ],
   "ImageParameterOptions": [
@@ -611,6 +659,9 @@
           "Stage": "SST_BINARIZE_IMAGE",
           "BinarizationModes": [
             {
+              "Mode": "BM_THRESHOLD"
+            },
+            {
               "EnableFillBinaryVacancy": 0,
               "ThresholdCompensation": 21,
               "Mode": "BM_LOCAL_BLOCK"
@@ -620,6 +671,9 @@
         {
           "Stage": "SST_BINARIZE_TEXTURE_REMOVED_GRAYSCALE",
           "BinarizationModes": [
+            {
+              "Mode": "BM_THRESHOLD"
+            },
             {
               "EnableFillBinaryVacancy": 0,
               "ThresholdCompensation": 21,

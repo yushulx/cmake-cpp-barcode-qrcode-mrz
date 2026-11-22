@@ -18,7 +18,7 @@ typedef void* HANDLE;
 
 #include "DynamsoftCore.h"
 
-#define DBR_VERSION "11.4.20.7177"
+#define DBR_VERSION "11.6.10.8373"
 
 /**Enumeration section*/
 
@@ -714,6 +714,10 @@ namespace dynamsoft
 				 * @return Returns 0 if success, otherwise an error code.
 				 */
 				virtual int SetLocation(const CQuadrilateral& location) = 0;
+
+				virtual void MarkAsDecoded() = 0;
+
+				virtual bool IsDecoded() const = 0;
 			};
 
 			class DBR_API CExtendedBarcodeResult;
@@ -1139,6 +1143,10 @@ namespace dynamsoft
 				 * @return Returns 0 if successful, otherwise returns a negative value.
 				 */
 				virtual int SetLocalizedBarcode(int index, const CLocalizedBarcodeElement* element, const double matrixToOriginalImage[9] = IDENTITY_MATRIX) = 0;
+				
+				virtual CLocalizedBarcodeElement* GetLocalizedBarcode(int index) = 0;
+
+				virtual CLocalizedBarcodeElement* operator[](int index) = 0;
 			};
 
 			/**
