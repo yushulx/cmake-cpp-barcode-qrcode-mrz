@@ -1,0 +1,194 @@
+import { Button, LineEdit, ListView, VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+export struct BarcodeItem {
+    format: string,
+    text: string,
+    location: string,
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    x3: float,
+    y3: float,
+    x4: float,
+    y4: float,
+}
+
+export component MainWindow inherits Window {
+    title: "Dynamsoft Barcode Reader (Rust + Slint)";
+    preferred-width: 1040px;
+    preferred-height: 700px;
+    min-width: 760px;
+    min-height: 500px;
+    background: #f3f3f3;
+
+    in-out property <string> file-path;
+    in-out property <image> preview;
+    in-out property <bool> has-preview: false;
+    in-out property <float> image-w: 0;
+    in-out property <float> image-h: 0;
+    in-out property <bool> camera-on: false;
+    in-out property <[BarcodeItem]> results;
+    in-out property <string> status: "Open an image to start.";
+
+    callback open-file();
+    callback decode-file();
+    callback path-edited(string);
+    callback toggle-camera();
+
+    VerticalBox {
+        padding: 12px;
+        spacing: 10px;
+
+        HorizontalBox {
+            spacing: 8px;
+            padding: 0px;
+
+            Button {
+                text: "Open Image...";
+                clicked => { root.open-file(); }
+            }
+            path-input := LineEdit {
+                placeholder-text: "Full path to an image or PDF...";
+                text <=> root.file-path;
+                edited(text) => { root.path-edited(text); }
+                accepted(text) => { root.decode-file(); }
+            }
+            Button {
+                text: "Decode";
+                primary: true;
+                enabled: root.file-path != "";
+                clicked => { root.decode-file(); }
+            }
+            Button {
+                text: root.camera-on ? "Stop Camera" : "Start Camera";
+                clicked => { root.toggle-camera(); }
+            }
+        }
+
+        HorizontalBox {
+            spacing: 10px;
+            padding: 0px;
+
+            preview-box := Rectangle {
+                horizontal-stretch: 3;
+                background: #ffffff;
+                border-radius: 6px;
+                border-width: 1px;
+                border-color: #d0d0d0;
+                clip: true;
+
+                property <float> iw: root.image-w > 0 ? root.image-w : 1;
+                property <float> ih: root.image-h > 0 ? root.image-h : 1;
+                property <length> fit: Math.min(self.width / iw, self.height / ih);
+                property <length> dw: iw * fit;
+                property <length> dh: ih * fit;
+                property <length> ox: (self.width - dw) / 2;
+                property <length> oy: (self.height - dh) / 2;
+                property <float> sx: dw / iw / 1px;
+                property <float> sy: dh / ih / 1px;
+
+                if root.has-preview: Image {
+                    x: preview-box.ox;
+                    y: preview-box.oy;
+                    width: preview-box.dw;
+                    height: preview-box.dh;
+                    source: root.preview;
+                    image-fit: fill;
+                }
+                if root.has-preview: Rectangle {
+                    x: preview-box.ox;
+                    y: preview-box.oy;
+                    width: preview-box.dw;
+                    height: preview-box.dh;
+
+                    for item in root.results: Path {
+                        fit: preserve;
+                        stroke: #00b0ff;
+                        stroke-width: 2px;
+                        fill: #00b0ff20;
+                        MoveTo { x: item.x1 * preview-box.sx; y: item.y1 * preview-box.sy; }
+                        LineTo { x: item.x2 * preview-box.sx; y: item.y2 * preview-box.sy; }
+                        LineTo { x: item.x3 * preview-box.sx; y: item.y3 * preview-box.sy; }
+                        LineTo { x: item.x4 * preview-box.sx; y: item.y4 * preview-box.sy; }
+                        Close {}
+                    }
+                }
+                if !root.has-preview: Text {
+                    text: "Image preview";
+                    color: #9a9a9a;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+
+            VerticalBox {
+                horizontal-stretch: 2;
+                spacing: 6px;
+                padding: 0px;
+
+                Text {
+                    text: "Results (\{root.results.length})";
+                    font-weight: 700;
+                }
+
+                Rectangle {
+                    vertical-stretch: 1;
+                    background: #ffffff;
+                    border-radius: 6px;
+                    border-width: 1px;
+                    border-color: #d0d0d0;
+                    clip: true;
+
+                    ListView {
+                        for item[index] in root.results: Rectangle {
+                            min-height: item-layout.min-height;
+                            background: Math.mod(index, 2) == 0 ? #ffffff : #f6f8fa;
+
+                            item-layout := VerticalLayout {
+                                padding: 10px;
+                                spacing: 3px;
+
+                                Text {
+                                    text: "\{index + 1}. \{item.format}";
+                                    font-weight: 700;
+                                    color: #0a5bd3;
+                                    overflow: elide;
+                                }
+                                Text {
+                                    text: item.text;
+                                    wrap: word-wrap;
+                                    color: #1a1a1a;
+                                }
+                                Text {
+                                    text: item.location;
+                                    font-size: 11px;
+                                    color: #6a6a6a;
+                                    wrap: word-wrap;
+                                }
+                            }
+                        }
+                    }
+
+                    if root.results.length == 0: Text {
+                        text: "No results yet.";
+                        color: #9a9a9a;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 26px;
+            Text {
+                x: 4px;
+                vertical-alignment: center;
+                text: root.status;
+                color: #444444;
+                overflow: elide;
+            }
+        }
+    }
+}

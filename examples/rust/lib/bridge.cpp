@@ -55,12 +55,9 @@ int init_license(const char *license)
     return iRet;
 }
 
-BarcodeResults *decode_barcode_file(void *instance, const char *filename)
+static BarcodeResults *extract_barcodes(CCapturedResult *result)
 {
-    CCaptureVisionRouter *cvr = (CCaptureVisionRouter *)instance;
     BarcodeResults *all_barcodes = NULL;
-
-    CCapturedResult *result = cvr->Capture(filename, CPresetTemplate::PT_READ_BARCODES);
     if (result && result->GetErrorCode() == 0)
     {
         CDecodedBarcodesResult *barcodeResult = result->GetDecodedBarcodesResult();
@@ -105,6 +102,21 @@ BarcodeResults *decode_barcode_file(void *instance, const char *filename)
     }
 
     return all_barcodes;
+}
+
+BarcodeResults *decode_barcode_file(void *instance, const char *filename)
+{
+    CCaptureVisionRouter *cvr = (CCaptureVisionRouter *)instance;
+    CCapturedResult *result = cvr->Capture(filename, CPresetTemplate::PT_READ_BARCODES);
+    return extract_barcodes(result);
+}
+
+BarcodeResults *decode_barcode_buffer(void *instance, const unsigned char *bytes, int width, int height, int stride)
+{
+    CCaptureVisionRouter *cvr = (CCaptureVisionRouter *)instance;
+    CImageData image((unsigned long long)stride * height, bytes, width, height, stride, IPF_RGB_888);
+    CCapturedResult *result = cvr->Capture(&image, CPresetTemplate::PT_READ_BARCODES);
+    return extract_barcodes(result);
 }
 
 void *CVR_CreateInstance()

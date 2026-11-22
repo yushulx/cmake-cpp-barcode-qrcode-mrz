@@ -28,6 +28,7 @@ extern "C"
 
     Barcode *create_barcode(const char *type, const char *value, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4);
     BarcodeResults *decode_barcode_file(void *instance, const char *filename);
+    BarcodeResults *decode_barcode_buffer(void *instance, const unsigned char *bytes, int width, int height, int stride);
     void free_barcode(BarcodeResults *results);
     int init_license(const char *license);
     void *CVR_CreateInstance();

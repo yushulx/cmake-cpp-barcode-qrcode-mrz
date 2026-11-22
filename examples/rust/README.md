@@ -1,9 +1,13 @@
 # Rust Barcode Scanner
 
-A command-line barcode scanner implemented in Rust, using FFI bindings to the Dynamsoft Barcode Reader SDK. This is a Rust port of the C++ command-line example with enhanced functionality.
+A barcode scanner implemented in Rust, using FFI bindings to the Dynamsoft Barcode Reader SDK. This is a Rust port of the C++ command-line example with enhanced functionality. It ships two binaries that share the same native decoding core:
+
+- **`barcode-scanner`** — the original command-line tool (interactive + batch modes).
+- **`barcode-reader-ui`** — a desktop GUI built with [Slint](https://slint.dev) that previews the image and lists every decoded barcode.
 
 ## Features
 
+- **Desktop UI (Slint)**: Open an image, see a preview, and browse all decoded results with format, text, and corner coordinates
 - **Interactive Mode**: Run without arguments to enter interactive mode
 - **Batch Processing**: Pass one or more file paths as arguments to process them directly
 - **Multiple Barcode Types**: Supports all barcode types supported by Dynamsoft SDK
@@ -26,14 +30,30 @@ cargo clean
 cargo build --release
 ```
 
+This produces both `barcode-scanner` (CLI) and `barcode-reader-ui` (Slint GUI) in `target/release`. The first build downloads and compiles Slint, so it takes longer than subsequent builds.
+
 ## Usage
+
+### Desktop UI (Slint)
+
+```bash
+cargo run --release --bin barcode-reader-ui
+```
+
+Or on Windows, double-click `run-ui.bat`. In the window:
+
+1. Click **Open Image...** and pick a file (the dialog starts in the repo's `images/` folder), or type/paste a full path and press **Decode** (Enter works too).
+2. The left pane shows the image; the right pane lists each barcode's **format**, **text**, and four corner **coordinates**.
+3. The status bar reports the decoded count or any error.
+
+> The image preview supports JPEG, PNG, TIFF, BMP, GIF, and WebP. PDFs are decoded but not previewed.
 
 ### Interactive Mode
 
 Run without arguments to enter interactive mode:
 
 ```bash
-cargo run
+cargo run --bin barcode-scanner
 ```
 
 Example session:
@@ -65,10 +85,10 @@ Process one or more files directly:
 
 ```bash
 # Single file
-cargo run -- "../../images/QRCode.tif"
+cargo run --bin barcode-scanner -- "../../images/QRCode.tif"
 
 # Multiple files
-cargo run -- "../../images/QRCode.tif" "../../images/Code128.png" "../../images/multi-barcode.jpg"
+cargo run --bin barcode-scanner -- "../../images/QRCode.tif" "../../images/Code128.png" "../../images/multi-barcode.jpg"
 ```
 
 ### With Built Executable
@@ -77,10 +97,13 @@ After building, you can use the executable directly:
 
 ```bash
 # Interactive mode
-./target/release/dynamsoft-barcode-cli
+./target/release/barcode-scanner
 
 # Batch mode
-./target/release/dynamsoft-barcode-cli "path/to/image.jpg"
+./target/release/barcode-scanner "path/to/image.jpg"
+
+# Desktop UI
+./target/release/barcode-reader-ui
 ```
 
 ## Supported Image Formats
@@ -94,18 +117,21 @@ After building, you can use the executable directly:
 
 ## Configuration
 
-Set your license key in `src/main.rs`:
+Set your license key in `src/scanner.rs` (shared by both binaries):
 
 ```rust
-let license = "YOUR-LICENSE-KEY-HERE";
+pub const DEFAULT_LICENSE: &str = "YOUR-LICENSE-KEY-HERE";
 ```
 
 ## Architecture
 
-The Rust implementation uses FFI (Foreign Function Interface) to call the native Dynamsoft C library:
+The Rust implementation uses FFI (Foreign Function Interface) to call the native Dynamsoft C library. `build.rs` compiles `lib/bridge.cpp`, links the SDK, copies the runtime DLLs/resources next to the binaries, and compiles the Slint UI (`ui/app.slint`).
 
-- `bindings.rs`: Contains FFI declarations and C structure definitions
-- `main.rs`: Main application logic with both interactive and batch modes
+- `src/scanner.rs`: FFI declarations plus a safe `BarcodeReader` wrapper (license init, decode, cleanup) shared by both binaries
+- `src/main.rs`: Command-line logic with interactive and batch modes (`barcode-scanner`)
+- `src/gui.rs`: Slint GUI logic — file dialog, image preview, and results model (`barcode-reader-ui`)
+- `ui/app.slint`: Declarative Slint UI (toolbar, preview pane, results list, status bar)
+- `lib/bridge.cpp` / `lib/bridge.h`: C ABI bridge over the Dynamsoft Capture Vision Router
 - `Cargo.toml`: Project configuration and dependencies
 
 ![Rust Barcode Reader](https://www.dynamsoft.com/codepool/img/2024/06/rust-command-line-barcode-reader.jpg)
