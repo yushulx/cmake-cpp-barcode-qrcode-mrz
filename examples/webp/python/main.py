@@ -12,7 +12,7 @@ Dynamsoft Capture Vision does not decode WebP itself (it reports error -10006
 "The file type is not supported."), so the image is decoded with OpenCV and
 handed to CaptureVisionRouter as a BGR buffer. Everything else - localization,
 decoding, and the four-point result - comes from the Dynamsoft SDK
-(dynamsoft-barcode-reader-bundle 11.6.5000).
+(dynamsoft-barcode-reader-bundle 11.6.6000).
 """
 
 import os
