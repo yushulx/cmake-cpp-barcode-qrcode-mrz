@@ -19,8 +19,8 @@ A barcode scanner implemented in Rust, using FFI bindings to the Dynamsoft Barco
 ## Prerequisites
 
 1. **Rust Toolchain**: Install Rust from [rustup.rs](https://rustup.rs/)
-2. **Dynamsoft SDK**: The Dynamsoft Capture Vision SDK must be installed and accessible
-3. **Visual Studio Build Tools** (Windows): Required for FFI compilation
+2. **Dynamsoft SDK**: the one bundled in [`dcv/`](../../dcv) — `build.rs` links against it and copies the runtime libraries plus `Templates/`/`Models/` next to the binaries, so nothing has to be installed system-wide
+3. **C++ toolchain**: Visual Studio Build Tools (MSVC) on Windows, `g++` on Linux, clang + Xcode Command Line Tools on macOS
 4. **Dynamsoft Trial License**: Get a trial license from [Dynamsoft](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform)
 
 ## Building

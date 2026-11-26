@@ -1,5 +1,5 @@
 //! Rust wrapper for the [Dynamsoft Barcode Reader SDK](https://www.dynamsoft.com/capture-vision/docs/core/introduction/)
-//! (DBR 11.6.50, built on Dynamsoft Capture Vision 3.6.50).
+//! (DBR 11.6.60, built on Dynamsoft Capture Vision 3.6.60).
 //!
 //! Reads 1D and 2D barcodes — QR Code, DataMatrix, PDF417, Code 128, EAN/UPC,
 //! Aztec, MaxiCode and more — from image files (JPEG, PNG, TIFF, BMP, GIF,
@@ -15,12 +15,14 @@
 //!
 //! # Native SDK
 //!
-//! The crate bundles the C++ bridge and SDK headers. The native libraries and
-//! decoding models (~40–70 MB) are downloaded once from the official
-//! `dynamsoft-capture-vision-bundle` PyPI wheel (SHA-256 verified, cached per
-//! platform) and placed next to the built binaries. Set the `DCV_DIR`
-//! environment variable to a local Dynamsoft Capture Vision 3.6.50 directory
-//! (with `lib/` and `resource/`) to build offline.
+//! The crate carries the C++ bridge; the SDK headers come from `DCV_DIR`, from
+//! the `dcv/` folder of the sample repository, or from the copy staged with a
+//! published release. The native libraries and decoding models (~40–70 MB) are
+//! downloaded once from the official `dynamsoft-capture-vision-bundle` PyPI
+//! wheel (SHA-256 verified, cached per platform) and placed next to the built
+//! binaries. Set the `DCV_DIR` environment variable to a local Dynamsoft
+//! Capture Vision 3.6.60 directory (with `lib/` and `resource/`) to build
+//! offline.
 //!
 //! # Example
 //!

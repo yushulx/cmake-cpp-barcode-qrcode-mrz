@@ -1,2 +1,7 @@
 /target
 Cargo.lock
+
+# Staged by scripts/stage-sdk.sh for `cargo publish` only; the repository keeps
+# a single copy of the SDK under ../../../dcv.
+/include
+/lib

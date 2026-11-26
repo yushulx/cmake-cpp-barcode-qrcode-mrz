@@ -13,7 +13,7 @@
 #endif
 
 #include "DynamsoftCaptureVisionRouter.h"
-#define ID_UTILITY_VERSION  "1.6.50.9329"
+#define ID_UTILITY_VERSION  "1.6.60.9515"
 
 using namespace dynamsoft::dbr;
 using namespace dynamsoft::basic_structures;

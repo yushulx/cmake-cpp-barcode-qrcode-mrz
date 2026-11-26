@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use sha2::{Digest, Sha256};
 
-const DCV_VERSION: &str = "3.6.5000";
+const DCV_VERSION: &str = "3.6.6000";
 
 struct Wheel {
     tag: &'static str,
@@ -20,23 +20,23 @@ struct Wheel {
 const WHEELS: &[Wheel] = &[
     Wheel {
         tag: "win-x64",
-        url: "https://files.pythonhosted.org/packages/3d/18/a186037850638914fdd9947e1ee64218cfc2f120d7b054a64100520a8f37/dynamsoft_capture_vision_bundle-3.6.5000-cp312-cp312-win_amd64.whl",
-        sha256: "ec644979e0b9af506af91df0c6fe2fc352f2b16b4bd07e807ce8bea59ab89848",
+        url: "https://files.pythonhosted.org/packages/0d/2c/18c14cfd222a266e490d056b4e27570698e646ed585abffbb3b156d951cb/dynamsoft_capture_vision_bundle-3.6.6000-cp312-cp312-win_amd64.whl",
+        sha256: "b6ae9e44cb99f8c797c3367f144118dcbb7cc15d7eec1fa3dd27496599362c19",
     },
     Wheel {
         tag: "linux-x64",
-        url: "https://files.pythonhosted.org/packages/4d/b4/73729fe206d1ff6263cb3b75df085895a79efc6e7429f88ccf837fb18743/dynamsoft_capture_vision_bundle-3.6.5000-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
-        sha256: "5c23cdc0b3bd04fff7fb5df7a571bfa1f309f5e0053cacea40bb1734de7910d2",
+        url: "https://files.pythonhosted.org/packages/ad/00/744a9b70f53100f44854d1e14bdf765d9c2bb77c7d93646eebb65b6f697e/dynamsoft_capture_vision_bundle-3.6.6000-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+        sha256: "ba2c83aa8ad8ed6ff3d51d1eb382b445773c7f10b8df952f8d7dedc18a2d29dc",
     },
     Wheel {
         tag: "linux-arm64",
-        url: "https://files.pythonhosted.org/packages/6b/50/b588c0c13afad1df6dc984b4ce04b870f478abc3a835d9725c4cbc5135ea/dynamsoft_capture_vision_bundle-3.6.5000-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
-        sha256: "e832e50e52b6c2126bfadffda28353cacb9fbb77669dc3ac4d11d9d10380b68d",
+        url: "https://files.pythonhosted.org/packages/0b/29/fc852db71aaa8e948ef22081afcd9e61c4e37a04f7d645c2b978360ce432/dynamsoft_capture_vision_bundle-3.6.6000-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+        sha256: "a2b1cb0a952327b8ed90e77c797ff880525441b70bfae4fb46cb756868b13d11",
     },
     Wheel {
         tag: "macos-universal",
-        url: "https://files.pythonhosted.org/packages/71/15/746ee8f0a8cc12139c6264cd914a3f44478828b0d595545ccf11aaa6be19/dynamsoft_capture_vision_bundle-3.6.5000-cp312-cp312-macosx_12_0_universal2.whl",
-        sha256: "b1a0552c05f86e80df45080e0688f6d968a69127d118e4fe7514ee14d39cc13c",
+        url: "https://files.pythonhosted.org/packages/17/e6/4ed5cc749eeb318537fafc71ae601de2c23da3f81e1d40f7ffd548056e70/dynamsoft_capture_vision_bundle-3.6.6000-cp312-cp312-macosx_12_0_universal2.whl",
+        sha256: "9c139f63c580409c2aac1974d6edb4ec72368463c9e4b53c29e46934bd90d7d6",
     },
 ];
 
@@ -51,7 +51,6 @@ fn main() {
     println!("cargo:rerun-if-env-changed=DCV_DIR");
     println!("cargo:rerun-if-changed=native/bridge.cpp");
     println!("cargo:rerun-if-changed=native/bridge.h");
-    println!("cargo:rerun-if-changed=include");
 
     // docs.rs builds have no network and no native SDK; the extern declarations
     // alone are enough to render the documentation.
@@ -65,14 +64,44 @@ fn main() {
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let runtime_dir = out_dir.join("runtime");
 
-    let mut sdk = match env::var_os("DCV_DIR") {
-        Some(dir) => local_sdk(PathBuf::from(dir), &target_os, &target_arch),
+    // The SDK is used in place, never copied into this directory:
+    //   1. DCV_DIR, if the user points at a Dynamsoft Capture Vision tree;
+    //   2. ../../../dcv, the SDK that ships with this repository;
+    //   3. the copies staged by scripts/stage-sdk.sh for a published crate,
+    //      whose runtime then comes from the PyPI wheel.
+    let repo_sdk = manifest_dir.join("../../../dcv");
+    let staged = manifest_dir.join("include").is_dir();
+    let sdk_root = match env::var_os("DCV_DIR") {
+        Some(dir) => {
+            let dir = PathBuf::from(dir);
+            println!("cargo:rerun-if-changed={}", dir.join("include").display());
+            Some(dir)
+        }
+        None if repo_has_sdk(&repo_sdk) => {
+            println!("cargo:rerun-if-changed={}", repo_sdk.join("include").display());
+            Some(repo_sdk.clone())
+        }
+        None => None,
+    };
+
+    let include_dir = match (&sdk_root, staged) {
+        (Some(root), _) => root.join("include"),
+        (None, true) => manifest_dir.join("include"),
+        (None, false) => panic!(
+            "dbr: no Dynamsoft Capture Vision SDK found.\n\
+             Point DCV_DIR at a DCV 3.6.60 directory, or run \
+             examples/rust/dbr/scripts/stage-sdk.sh before packaging."
+        ),
+    };
+
+    let mut sdk = match &sdk_root {
+        Some(root) => local_sdk(root.clone(), &target_os, &target_arch),
         None => downloaded_sdk(&target_os, &target_arch),
     };
 
     cc::Build::new()
         .cpp(true)
-        .include(manifest_dir.join("include"))
+        .include(&include_dir)
         .file(manifest_dir.join("native/bridge.cpp"))
         .compile("dbr_bridge");
 
@@ -87,11 +116,13 @@ fn main() {
 
     match target_os.as_str() {
         "windows" => {
-            // Import libraries for the SDK DLLs are bundled with the crate.
-            println!(
-                "cargo:rustc-link-search=native={}",
-                manifest_dir.join("lib").join("win").display()
-            );
+            // Import libraries: from the SDK tree when one is available,
+            // otherwise the copies staged with the crate for publishing.
+            let import_dir = match &sdk_root {
+                Some(root) => root.join("lib").join("win"),
+                None => manifest_dir.join("lib").join("win"),
+            };
+            println!("cargo:rustc-link-search=native={}", import_dir.display());
             for name in [
                 "DynamsoftCaptureVisionRouterx64",
                 "DynamsoftBarcodeReaderx64",
@@ -136,9 +167,19 @@ fn platform_tag(os: &str, arch: &str) -> &'static str {
     }
 }
 
+/// True when `dir` looks like a Dynamsoft Capture Vision tree (`include/` and
+/// `resource/`), which is how the SDK is laid out in this repository.
+fn repo_has_sdk(dir: &Path) -> bool {
+    dir.join("include").join("DynamsoftBarcodeReader.h").is_file()
+        && dir.join("resource").join("Templates").is_dir()
+}
+
 fn local_sdk(dir: PathBuf, os: &str, arch: &str) -> Sdk {
     let dir = fs::canonicalize(&dir)
-        .unwrap_or_else(|_| panic!("dbr: DCV_DIR={} does not exist", dir.display()));
+        .unwrap_or_else(|_| panic!("dbr: {} does not exist", dir.display()));
+    // MSVC's linker rejects the \\?\ prefix that canonicalize() adds.
+    let text = dir.to_string_lossy();
+    let dir = PathBuf::from(text.strip_prefix(r"\\?\").unwrap_or(&text).to_string());
     let lib_dir = match platform_tag(os, arch) {
         "win-x64" => dir.join("lib").join("win"),
         "linux-x64" => dir.join("lib").join("linux").join("x64"),
@@ -154,7 +195,7 @@ fn local_sdk(dir: PathBuf, os: &str, arch: &str) -> Sdk {
     for required in [&sdk.lib_dir, &sdk.templates_dir, &sdk.models_dir] {
         if !required.is_dir() {
             panic!(
-                "dbr: DCV_DIR={} is missing {}. Expected a Dynamsoft Capture Vision {DCV_VERSION} directory with lib/ and resource/ subdirectories.",
+                "dbr: SDK directory {} is missing {}. Expected a Dynamsoft Capture Vision {DCV_VERSION} directory with lib/ and resource/ subdirectories.",
                 dir.display(),
                 required.display()
             );

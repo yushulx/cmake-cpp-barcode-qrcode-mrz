@@ -8,8 +8,8 @@ PDF417, Code 128, EAN/UPC, Aztec, MaxiCode and other 1D/2D barcodes from image
 files, PDFs and raw pixel buffers.
 
 This is the modern successor of the `dbr` 0.1.x crate (2018). It wraps
-**Dynamsoft Barcode Reader 11.6.50** through the **Dynamsoft Capture Vision
-3.6.50** C++ API, following the
+**Dynamsoft Barcode Reader 11.6.60** through the **Dynamsoft Capture Vision
+3.6.60** C++ API, following the
 [Rust example](https://github.com/yushulx/cmake-cpp-barcode-qrcode-mrz/tree/main/examples/rust)
 in the official sample repository.
 
@@ -74,23 +74,35 @@ DYNAMSOFT_LICENSE_KEY=your-key cargo test
 
 ## How the native SDK is obtained
 
-The crate itself stays small (~1.5 MB): it bundles the C++ bridge source, the
-SDK headers and the Windows import libraries. The native runtime (DLL / so /
-dylib, preset templates and decoding models, ~40–70 MB per platform) is too
-large for crates.io, so `build.rs` fetches it automatically:
+The crate itself stays small (~1 MB): it carries the C++ bridge source, and
+`build.rs` picks up the SDK it needs from one of three places, in order:
 
-1. **Default — official PyPI wheel.** On first build the crate downloads the
-   platform wheel of
-   [`dynamsoft-capture-vision-bundle` 3.6.5000](https://pypi.org/project/dynamsoft-capture-vision-bundle/),
-   verifies its SHA-256, and caches it under your user cache directory
+1. **`DCV_DIR`** — point it at a Dynamsoft Capture Vision 3.6.60 directory laid
+   out like the
+   [sample repository's `dcv/`](https://github.com/yushulx/cmake-cpp-barcode-qrcode-mrz/tree/main/dcv)
+   (`lib/win`, `lib/linux/x64`, `lib/linux/arm64`, `lib/mac`,
+   `resource/Templates`, `resource/Models`).
+2. **`../../../dcv`, the SDK bundled with this repository** — used automatically
+   when the crate is built from a checkout, so there is exactly one copy of the
+   SDK in the tree and a git pull keeps the crate in sync with it.
+3. **The published crate** — `cargo publish` only uploads the crate directory,
+   so the headers and the Windows import libraries are staged there first and
+   gitignored. The native runtime (DLL / so / dylib, preset templates and
+   decoding models, ~40–70 MB per platform) is too large for crates.io, so it
+   is downloaded on first build from the official
+   [`dynamsoft-capture-vision-bundle` 3.6.6000](https://pypi.org/project/dynamsoft-capture-vision-bundle/)
+   wheel, SHA-256 verified, and cached under your user cache directory
    (`%LOCALAPPDATA%\dbr-rs` on Windows, `~/.cache/dbr-rs` on Linux/macOS).
    The native libraries in the wheel are byte-identical to the C++ SDK
    distribution. Subsequent builds are offline.
-2. **Local override — `DCV_DIR`.** Set `DCV_DIR` to a local Dynamsoft Capture
-   Vision 3.6.50 directory laid out like the
-   [sample repository's `dcv/`](https://github.com/yushulx/cmake-cpp-barcode-qrcode-mrz/tree/main/dcv)
-   folder (`lib/win`, `lib/linux/x64`, `lib/linux/arm64`, `lib/mac`,
-   `resource/Templates`, `resource/Models`) to skip the download entirely.
+
+Releasing therefore means:
+
+```bash
+examples/rust/dbr/scripts/stage-sdk.sh   # copy headers + .lib from ../../../dcv
+cargo publish -p dbr
+git clean -fd examples/rust/dbr/include examples/rust/dbr/lib
+```
 
 Either way the runtime libraries and resources (`Templates/`, `Models/`,
 `*.data`) are placed next to the built binaries, tests and examples, so
@@ -105,25 +117,14 @@ into one folder:
 - **Windows** — works as-is; the loader searches the executable's directory.
 - **macOS** — works as-is; the build rewrites the dylib install names to
   `@loader_path`, so libraries resolve relative to the executable.
-- **Linux** — the SDK libraries use plain SONAMEs, so the executable also
-  needs an rpath pointing at its own directory. Add this to your project's
-  `.cargo/config.toml`:
-
-  ```toml
-  [target.x86_64-unknown-linux-gnu]
-  rustflags = ["-C", "link-arg=-Wl,-rpath,$ORIGIN"]
-
-  [target.aarch64-unknown-linux-gnu]
-  rustflags = ["-C", "link-arg=-Wl,-rpath,$ORIGIN"]
-  ```
-
-  Alternatively, set `LD_LIBRARY_PATH` to the deployment folder at runtime.
+- **Linux** — works as-is; `build.rs` links with `-Wl,-rpath,$ORIGIN`, so the
+  executable looks for the `.so` files in its own directory.
 
 ## Version mapping
 
 | Crate version | Barcode Reader | Capture Vision |
 | --- | --- | --- |
-| 11.6.50 | 11.6.50 | 3.6.50 |
+| 11.6.60 | 11.6.60 | 3.6.60 |
 
 ## License
 

@@ -1,6 +1,6 @@
 [package]
 name = "dbr"
-version = "11.6.50"
+version = "11.6.60"
 edition = "2021"
 description = "Dynamsoft Barcode Reader SDK wrapper: read QR Code, DataMatrix, PDF417, Code 128 and more from images, PDFs and raw pixel buffers"
 license = "MIT"
@@ -11,6 +11,21 @@ keywords = ["barcode", "qrcode", "pdf417", "datamatrix", "decoder"]
 categories = ["multimedia::images", "api-bindings"]
 readme = "README.md"
 links = "dbr"
+# include/ and lib/ are gitignored and staged by scripts/stage-sdk.sh right
+# before publishing, so the file list has to be spelled out: an explicit
+# `include` is the only way to package files that git ignores.
+include = [
+    "Cargo.toml",
+    "build.rs",
+    "LICENSE",
+    "README.md",
+    "src/**",
+    "native/**",
+    "examples/**",
+    "tests/**",
+    "include/**",
+    "lib/**",
+]
 
 [dependencies]
 

@@ -1,0 +1,4 @@
+# Shell scripts run on Linux, macOS, and in Git Bash on Windows. A CRLF
+# checkout breaks the shebang and every line continuation, so pin them to LF
+# even when core.autocrlf is enabled.
+*.sh text eol=lf
